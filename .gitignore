@@ -8,30 +8,30 @@ __pycache__/
 venv/
 env/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# IDEs
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
-
 # Environment / secrets
 .env
 .env.*
 !.env.example
 
-# Build artifacts
-build/
-dist/
-*.egg-info/
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Frontend
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
 frontend/node_modules/
-frontend/.vite/
-frontend/*.tsbuildinfo
+frontend/dist/
+
+# Logs
+*.log
+
+# Local generated data
+*.tmp
