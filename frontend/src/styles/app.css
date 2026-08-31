@@ -1,0 +1,787 @@
+:root {
+  color-scheme: dark;
+  --bg: #05070c;
+  --panel-bg: #0b0f18;
+  --panel-border: #1c2433;
+  --text: #e8edf5;
+  --text-muted: #8a92a6;
+  --accent: #5ec8f8;
+  --success: #4fd1a5;
+  --warning: #f2a65a;
+  --danger: #ef6a6a;
+  font-family: "Segoe UI", "Inter", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Layout ---------- */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/*
+ * Sits behind everything else purely by DOM order (first child, no
+ * z-index gymnastics needed) -- painted before the header/body, which
+ * come after it in the document. The 3D graph canvas keeps its own
+ * solid background (set on ForceGraph3D itself) so node/edge contrast
+ * stays clean; the atmosphere shows through the header and the panels'
+ * glass effect, and around the graph in whatever margin the layout has.
+ *
+ * Layer order (top to bottom): an optional local image asset, then a
+ * soft multi-color nebula (radial gradients), then a faint grid, then a
+ * dark vignette toward the edges, then the flat base color. If
+ * frontend/public/atmosphere.jpg doesn't exist, that layer simply doesn't
+ * paint (transparent) and the gradients underneath still show -- drop an
+ * image there (any dark, low-contrast space/technological photo or
+ * illustration) to use one instead of/in addition to the gradients.
+ */
+.dashboard-atmosphere {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    url("/atmosphere.jpg"),
+    radial-gradient(ellipse 1100px 850px at 15% 20%, rgba(94, 200, 248, 0.1), transparent 62%),
+    radial-gradient(ellipse 1000px 1000px at 85% 15%, rgba(199, 146, 234, 0.09), transparent 62%),
+    radial-gradient(ellipse 900px 800px at 50% 100%, rgba(79, 209, 165, 0.06), transparent 65%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 64px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 64px
+    ),
+    radial-gradient(ellipse 140% 140% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.55) 100%);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg);
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--panel-border);
+  background: linear-gradient(180deg, rgba(11, 15, 24, 0.85), rgba(5, 7, 12, 0.85));
+  backdrop-filter: blur(8px);
+}
+
+.dashboard-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dashboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.dashboard-header h1 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dashboard-target {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr 320px;
+  min-height: 0;
+}
+
+.dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid var(--panel-border);
+}
+
+.dashboard-column-right {
+  border-right: none;
+  border-left: 1px solid var(--panel-border);
+}
+
+.dashboard-graph {
+  position: relative;
+  min-width: 0;
+}
+
+.graph-canvas-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Isolates a local stacking context so .globe-backdrop's negative
+     z-index is only ever compared against its sibling canvas here, never
+     against unrelated positioned elements elsewhere on the page. */
+  z-index: 0;
+}
+
+/*
+ * Purely decorative globe SVG (GlobeBackdrop.tsx), sitting behind the
+ * ForceGraph3D canvas within this same container. The canvas itself is
+ * transparent (see InvestigationGraph.tsx) so this shows through wherever
+ * the graph isn't drawing nodes/edges. Never intercepts pointer events and
+ * carries no graph data of its own.
+ */
+.globe-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+}
+
+.graph-controls button {
+  background: rgba(11, 15, 24, 0.85);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.graph-controls button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Panels ---------- */
+
+.panel {
+  background: rgba(11, 15, 24, 0.72);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+.panel-scroll {
+  overflow-y: auto;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Numeric/metadata fields line up cleanly instead of jittering per-digit width. */
+.kv-row dd,
+.perf-value,
+.perf-label,
+.record-ttl,
+.record-attrs {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Slim, unobtrusive scrollbars for panel lists (WebKit/Blink; Firefox falls back to default). */
+.dashboard-column,
+.panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border) transparent;
+}
+
+.dashboard-column::-webkit-scrollbar,
+.panel-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-column::-webkit-scrollbar-thumb,
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: var(--panel-border);
+  border-radius: 3px;
+}
+
+.empty-state {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.kv-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.kv-row dt {
+  color: var(--text-muted);
+}
+
+.kv-row dd {
+  margin: 0;
+  text-align: right;
+  word-break: break-word;
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.status-success {
+  color: var(--success);
+  background: rgba(79, 209, 165, 0.12);
+}
+
+.status-partial {
+  color: var(--warning);
+  background: rgba(242, 166, 90, 0.12);
+}
+
+.status-failed {
+  color: var(--danger);
+  background: rgba(239, 106, 106, 0.12);
+}
+
+/* ---------- Record / entity lists ---------- */
+
+.record-group {
+  margin-bottom: 14px;
+}
+
+.record-group:last-child {
+  margin-bottom: 0;
+}
+
+.record-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.record-count {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.record-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.record-item {
+  font-size: 12.5px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.record-name {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.record-value {
+  word-break: break-all;
+}
+
+.record-value-muted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.record-attrs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.record-ttl {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.soa-record {
+  border-left-color: var(--accent);
+}
+
+.overview-errors {
+  margin-top: 10px;
+}
+
+.overview-errors .record-item {
+  border-left-color: var(--danger);
+}
+
+/* ---------- Query performance ---------- */
+
+.perf-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perf-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.perf-label {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perf-bar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.perf-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.perf-value {
+  text-align: right;
+  color: var(--text-muted);
+}
+
+/* ---------- Legend ---------- */
+
+.legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ---------- Investigation banner (search-in-flight / search error overlay) ---------- */
+
+.investigation-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  max-width: min(520px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  backdrop-filter: blur(6px);
+  animation: investigation-banner-in 180ms ease-out;
+}
+
+@keyframes investigation-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .investigation-banner {
+    animation: none;
+  }
+}
+
+.investigation-banner-loading {
+  flex-direction: column;
+  align-items: stretch;
+  width: 320px;
+  background: rgba(11, 15, 24, 0.92);
+  border: 1px solid var(--panel-border);
+}
+
+.investigation-banner-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.investigation-banner-bar-fill {
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: indeterminate-slide 1.2s ease-in-out infinite;
+}
+
+.investigation-banner-text {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.investigation-banner-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.investigation-banner-error {
+  background: rgba(30, 12, 12, 0.92);
+  border: 1px solid var(--danger);
+}
+
+.investigation-banner-error .investigation-banner-text {
+  color: var(--text);
+  text-align: left;
+}
+
+.investigation-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.investigation-banner-retry {
+  background: rgba(239, 106, 106, 0.15);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.investigation-banner-retry:hover {
+  background: rgba(239, 106, 106, 0.28);
+}
+
+.investigation-banner-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.investigation-banner-dismiss:hover {
+  color: var(--text);
+}
+
+/* ---------- Node inspector overlay ---------- */
+
+.node-inspector {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 5;
+  width: 280px;
+  max-height: 40%;
+  overflow-y: auto;
+  background: rgba(11, 15, 24, 0.92);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  backdrop-filter: blur(6px);
+  animation: node-inspector-in 180ms ease-out;
+}
+
+@keyframes node-inspector-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-inspector {
+    animation: none;
+  }
+}
+
+.node-inspector-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.node-inspector-close:hover {
+  color: var(--text);
+}
+
+.node-inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.node-inspector-label {
+  font-size: 13px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.node-inspector-kind {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- Loading / error state ---------- */
+
+.centered-message {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.centered-message-box {
+  max-width: 420px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.centered-message-box .hint code {
+  color: var(--text);
+}
+
+.status-view-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 6px 0;
+}
+
+.status-view-eyebrow-error {
+  color: var(--danger);
+}
+
+.status-view-target {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 10px 0;
+}
+
+.status-view-detail {
+  margin: 0 0 14px 0;
+}
+
+.indeterminate-bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.indeterminate-bar-fill {
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: indeterminate-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes indeterminate-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate-bar-fill {
+    animation: none;
+    width: 100%;
+  }
+}
+
+.status-view-retry {
+  background: rgba(239, 106, 106, 0.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 7px 18px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.status-view-retry:hover {
+  background: rgba(239, 106, 106, 0.2);
+}
+
+/* ---------- Target search ---------- */
+
+.target-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.target-search-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 260px;
+  transition: border-color 150ms ease;
+}
+
+.target-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.target-search-input:disabled {
+  opacity: 0.5;
+}
+
+.target-search-button {
+  background: rgba(94, 200, 248, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 7px 16px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.target-search-button:hover:not(:disabled) {
+  background: rgba(94, 200, 248, 0.22);
+}
+
+.target-search-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

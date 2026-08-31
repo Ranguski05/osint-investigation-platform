@@ -1,0 +1,6 @@
+dnspython>=2.6,<3
+pytest>=8,<9
+
+# Local dev API (frontend -> backend -> DNS collector)
+fastapi>=0.115,<1
+uvicorn[standard]>=0.32,<1
