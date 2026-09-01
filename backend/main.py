@@ -19,6 +19,8 @@ import os
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from collectors.certificates.collector import CertificateCollector
+from collectors.certificates.models import CertificateCollectorConfig
 from collectors.dns.collector import DNSCollector
 from collectors.dns.models import DNSCollectorConfig
 from collectors.subdomains.collector import SubdomainCollector
@@ -190,6 +192,49 @@ def investigate_subdomains(
         )
 
     collector = SubdomainCollector(config=config, sources=sources)
+    result = collector.collect(target)
+
+    return result.to_dict()
+
+
+@app.get("/api/investigations/certificates/{target}")
+def investigate_certificates(
+    target: str,
+    max_certificates: int = Query(
+        default=200,
+        gt=0,
+        le=500,
+        description=(
+            "Maximum number of deduplicated certificates to keep. Capped "
+            "at 500 regardless of the requested value."
+        ),
+    ),
+    timeout: float = Query(
+        default=5.0,
+        gt=0,
+        description="HTTP request timeout for the Certificate Transparency source.",
+    ),
+) -> dict:
+    """
+    Run the certificate collector against `target` and return its
+    structured result.
+
+    Independent of /api/investigations/dns and
+    /api/investigations/subdomains -- this collector does not call either
+    of them, and a failure here never affects a DNS or subdomain
+    investigation already on screen (see frontend's App.tsx, which treats
+    this as optional graph enrichment, same as subdomains).
+    """
+
+    if not target or not target.strip():
+        raise HTTPException(status_code=400, detail="Target must not be empty.")
+
+    config = CertificateCollectorConfig(
+        max_certificates=max_certificates,
+        request_timeout=timeout,
+    )
+
+    collector = CertificateCollector(config=config)
     result = collector.collect(target)
 
     return result.to_dict()

@@ -91,16 +91,43 @@ export function InvestigationGraph2D({
   const hostnameDiscovery = useMemo(() => buildHostnameDiscoveryMap(subdomainCollection), [subdomainCollection]);
 
   const focusId = selectedNodeId ?? hoveredNodeId;
-  const connectedNodeIds = useMemo(() => connectedTo(focusId, graph.edges), [focusId, graph.edges]);
 
   const rootId = graph.nodes[0]?.id ?? "";
 
   const initialFit = useMemo(() => computeInitialFitOptions(graph.nodes, rootId), [graph.nodes, rootId]);
 
-  const elements = useMemo(() => {
+  // Card dimming is deliberately keyed to selectedNodeId alone, NOT focusId
+  // (selection OR hover) -- most nodes in this graph only connect to the
+  // target, not to each other, so merely hovering any one card would dim
+  // nearly every other card on the board. That reads as "everything
+  // disappearing" from a passive mouse movement, which is far more
+  // disruptive here than in the 3D view (small spheres are rarely hovered
+  // by accident; large cards covering most of the canvas are). A real
+  // click-to-select is a deliberate action and keeps the stronger focus
+  // effect; hover still lightly highlights the touched card's edges below
+  // (via focusId, unchanged) without fading out the rest of the board.
+  const connectedToSelection = useMemo(
+    () => connectedTo(selectedNodeId, graph.edges),
+    [selectedNodeId, graph.edges]
+  );
+
+  // Deliberately its OWN memo, depending on selection but NOT on focusId/
+  // hover: React Flow measures each node's real DOM size before it can be
+  // positioned/fitted, so replacing this array forces every card to be
+  // re-measured. If this depended on hover too (as it used to, bundled
+  // together with edges below), merely sweeping the mouse across the board
+  // would re-measure the entire node set on every mouseenter/mouseleave --
+  // and colliding with the imperative re-fit below (or a concurrent data
+  // update, e.g. subdomain enrichment arriving) that churn could leave
+  // React Flow's viewport stuck reporting nodes as unmeasured for an
+  // extended stretch, rendering the whole board invisible. Keeping this
+  // array referentially stable across hover changes is what actually fixes
+  // that: hover recomputes (and re-syncs, see GraphCanvas) only the much
+  // cheaper edges below, never touching node measurement at all.
+  const nodes: EntityCardNode[] = useMemo(() => {
     const positions = computeCardPositions(graph.nodes, graph.edges, rootId);
 
-    const nodes: EntityCardNode[] = graph.nodes.map((node) => ({
+    return graph.nodes.map((node) => ({
       id: node.id,
       type: "entityCard",
       position: positions.get(node.id) ?? { x: 0, y: 0 },
@@ -108,11 +135,17 @@ export function InvestigationGraph2D({
         kind: node.kind,
         content: buildCardContent(node, graph.edges, hostnameDiscovery),
         selected: node.id === selectedNodeId,
-        dimmed: focusId !== null && !connectedNodeIds.has(node.id),
+        dimmed: selectedNodeId !== null && !connectedToSelection.has(node.id),
       },
     }));
+  }, [graph, rootId, hostnameDiscovery, selectedNodeId, connectedToSelection]);
 
-    const edges: Edge[] = graph.edges.map((edge) => {
+  // Hover-reactive (via focusId) but kept separate from `nodes` above --
+  // edges are plain SVG paths React Flow doesn't need to measure, so
+  // recomputing this on every hover is cheap and never triggers the node
+  // re-measurement path.
+  const edges: Edge[] = useMemo(() => {
+    return graph.edges.map((edge) => {
       const active = focusId !== null && (edge.source === focusId || edge.target === focusId);
       return {
         id: edge.id,
@@ -122,16 +155,14 @@ export function InvestigationGraph2D({
         ...edgeStyle(active),
       };
     });
-
-    return { nodes, edges };
-  }, [graph, hostnameDiscovery, selectedNodeId, focusId, connectedNodeIds]);
+  }, [graph, focusId]);
 
   return (
     <div className="graph-canvas-container investigation-board">
       <GraphCanvas
         key={resetToken}
-        initialNodes={elements.nodes}
-        initialEdges={elements.edges}
+        initialNodes={nodes}
+        initialEdges={edges}
         initialFitNodes={initialFit.nodes}
         initialFitPadding={initialFit.padding}
         initialFitMinZoom={initialFit.minZoom}
@@ -196,16 +227,19 @@ function GraphCanvas({
     pendingFit.current = { nodes: initialFitNodes, padding: initialFitPadding, minZoom: initialFitMinZoom };
   }, [initialFitNodes, initialFitPadding, initialFitMinZoom]);
 
-  // Re-sync from the latest computed nodes/edges without a full remount
-  // (see the key-remount above, reserved for actual camera resets) --
-  // this runs for selection/hover changes AND for the entity-type filter
-  // narrowing/widening which nodes exist at all (see EntityTypeFilter /
-  // filterGraph.ts). Card content, styling, and the node/edge *set* itself
-  // always mirror `initialNodes`/`initialEdges`; only `position` is taken
-  // from the currently-mounted node instead, so a card the investigator
-  // dragged stays exactly where they put it across any of these updates,
-  // while a node that appears or disappears (filter change) is added or
-  // removed immediately rather than waiting for a remount.
+  // Re-sync nodes from the latest computed set without a full remount (see
+  // the key-remount above, reserved for actual camera resets) -- this runs
+  // for selection changes AND for the entity-type filter narrowing/
+  // widening which nodes exist at all (see EntityTypeFilter/filterGraph.ts).
+  // Deliberately NOT dependent on hover: `initialNodes` itself only changes
+  // identity for those reasons (see the memo in InvestigationGraph2D), so
+  // this effect -- and the node re-measurement React Flow does whenever
+  // the array changes -- never runs from a mere mouse movement. Content/
+  // styling and the node *set* itself always mirror `initialNodes`; only
+  // `position` is taken from the currently-mounted node instead, so a card
+  // the investigator dragged stays exactly where they put it, while a node
+  // that appears or disappears (filter change) is added or removed
+  // immediately rather than waiting for a remount.
   useEffect(() => {
     setNodes((current) => {
       const currentById = new Map(current.map((node) => [node.id, node]));
@@ -214,8 +248,14 @@ function GraphCanvas({
         return existing ? { ...incoming, position: existing.position } : incoming;
       });
     });
+  }, [initialNodes, setNodes]);
+
+  // Edges re-sync independently and much more often (every hover changes
+  // which edge is highlighted) -- cheap, since edges are plain SVG paths
+  // React Flow never measures, unlike nodes above.
+  useEffect(() => {
     setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+  }, [initialEdges, setEdges]);
 
   // Performs a fit scheduled above, once `nodes`/`edges` (React Flow's
   // actual rendered state) reflect the new filtered set.

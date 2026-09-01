@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ApiDataSource, FileDataSource, type InvestigationDataSource } from "../data/InvestigationDataSource";
 import { SubdomainApiDataSource, type SubdomainDataSource } from "../data/SubdomainDataSource";
+import { CertificateApiDataSource, type CertificateDataSource } from "../data/CertificateDataSource";
 import { dnsToGraph } from "../data/dnsToGraph";
 import { subdomainsToGraph } from "../data/subdomainsToGraph";
+import { certificatesToGraph } from "../data/certificatesToGraph";
 import { mergeGraphs } from "../data/mergeGraphs";
 import type { DnsCollection } from "../types/dns";
 import type { SubdomainCollection } from "../types/subdomains";
+import type { CertificateCollection } from "../types/certificates";
 import { filterGraphByEntityKind, countNodesByKind, type EntityFilterValue } from "../data/filterGraph";
 import { InvestigationGraph } from "./graph/InvestigationGraph";
 import { InvestigationGraph2D } from "./graph/InvestigationGraph2D";
@@ -18,6 +21,7 @@ import { OverviewPanel } from "../panels/OverviewPanel";
 import { RecordsPanel } from "../panels/RecordsPanel";
 import { RelatedEntitiesPanel } from "../panels/RelatedEntitiesPanel";
 import { SubdomainsPanel } from "../panels/SubdomainsPanel";
+import { CertificatesPanel } from "../panels/CertificatesPanel";
 import { ErrorsPanel } from "../panels/ErrorsPanel";
 import { QueryPerformancePanel } from "../panels/QueryPerformancePanel";
 import { Legend } from "../panels/Legend";
@@ -37,6 +41,11 @@ const apiSource: InvestigationDataSource = new ApiDataSource("http://localhost:8
 // the extra hostnames). Kept as a separate data source rather than
 // bolted onto InvestigationDataSource, which is typed for DnsCollection.
 const subdomainSource: SubdomainDataSource = new SubdomainApiDataSource("http://localhost:8000/api");
+
+// Certificate intelligence is the same kind of independent, optional graph
+// enrichment as subdomain enumeration above -- fetched alongside the DNS
+// investigation, never blocking or failing it (see fetchCertificates).
+const certificateSource: CertificateDataSource = new CertificateApiDataSource("http://localhost:8000/api");
 
 type Phase = "loading" | "investigating" | "error" | "idle";
 
@@ -60,6 +69,7 @@ export function App() {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState(0);
   const [subdomainCollection, setSubdomainCollection] = useState<SubdomainCollection | null>(null);
+  const [certificateCollection, setCertificateCollection] = useState<CertificateCollection | null>(null);
 
   const fetchSubdomains = useCallback((target: string) => {
     subdomainSource
@@ -71,6 +81,21 @@ export function App() {
         // look like the DNS investigation itself failed.
         console.warn("Subdomain enumeration unavailable:", error);
         setSubdomainCollection(null);
+      });
+  }, []);
+
+  const fetchCertificates = useCallback((target: string) => {
+    certificateSource
+      .load(target)
+      .then((collection) => setCertificateCollection(collection))
+      .catch((error: unknown) => {
+        // Same treatment as fetchSubdomains: optional enrichment, never
+        // an error banner for the DNS investigation already on screen.
+        // A structurally-failed CertificateCollection (e.g. crt.sh down)
+        // is still a successful fetch and is handled by
+        // certificatesToGraph/CertificatesPanel, not here.
+        console.warn("Certificate intelligence unavailable:", error);
+        setCertificateCollection(null);
       });
   }, []);
 
@@ -86,6 +111,7 @@ export function App() {
         if (!cancelled) {
           setState({ phase: "idle", collection, pendingTarget: null, errorMessage: null });
           fetchSubdomains(collection.target.value);
+          fetchCertificates(collection.target.value);
         }
       })
       .catch((error: unknown) => {
@@ -102,7 +128,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [fetchSubdomains]);
+  }, [fetchSubdomains, fetchCertificates]);
 
   const handleInvestigate = useCallback(
     (target: string) => {
@@ -110,6 +136,7 @@ export function App() {
       // search overlays a banner rather than blanking the existing graph.
       setState((prev) => ({ ...prev, phase: "investigating", pendingTarget: target, errorMessage: null }));
       setSubdomainCollection(null);
+      setCertificateCollection(null);
 
       apiSource
         .load(target)
@@ -120,6 +147,7 @@ export function App() {
           setResetToken((token) => token + 1);
           setState({ phase: "idle", collection, pendingTarget: null, errorMessage: null });
           fetchSubdomains(target);
+          fetchCertificates(target);
         })
         .catch((error: unknown) => {
           setState((prev) => ({
@@ -130,7 +158,7 @@ export function App() {
           }));
         });
     },
-    [fetchSubdomains]
+    [fetchSubdomains, fetchCertificates]
   );
 
   const dismissError = useCallback(() => {
@@ -174,6 +202,7 @@ export function App() {
         <DashboardBody
           collection={state.collection}
           subdomainCollection={subdomainCollection}
+          certificateCollection={certificateCollection}
           selectedNodeId={selectedNodeId}
           hoveredNodeId={hoveredNodeId}
           onSelectNode={setSelectedNodeId}
@@ -203,6 +232,8 @@ interface DashboardBodyProps {
   collection: DnsCollection;
   /** Optional -- subdomain enrichment loads independently and may not be ready/available yet (see fetchSubdomains). */
   subdomainCollection: SubdomainCollection | null;
+  /** Optional -- certificate enrichment loads independently and may not be ready/available yet (see fetchCertificates). */
+  certificateCollection: CertificateCollection | null;
   selectedNodeId: string | null;
   hoveredNodeId: string | null;
   onSelectNode: (id: string | null) => void;
@@ -216,6 +247,7 @@ interface DashboardBodyProps {
 function DashboardBody({
   collection,
   subdomainCollection,
+  certificateCollection,
   selectedNodeId,
   hoveredNodeId,
   onSelectNode,
@@ -224,17 +256,19 @@ function DashboardBody({
   onResetCamera,
   banner,
 }: DashboardBodyProps) {
-  // Recomputed only when either source collection changes, not on every
-  // hover/select. dnsToGraph/subdomainsToGraph/mergeGraphs are pure and
-  // collector-agnostic -- neither knows the other collector exists. Both
-  // the 2D and 3D representations render this exact same merged graph
-  // (see InvestigationGraph.tsx / InvestigationGraph2D.tsx) -- the toggle
-  // below only changes which one is mounted, never what data either sees.
+  // Recomputed only when a source collection changes, not on every
+  // hover/select. dnsToGraph/subdomainsToGraph/certificatesToGraph/
+  // mergeGraphs are pure and collector-agnostic -- none of them knows
+  // any other collector exists. Both the 2D and 3D representations
+  // render this exact same merged graph (see InvestigationGraph.tsx /
+  // InvestigationGraph2D.tsx) -- the toggle below only changes which one
+  // is mounted, never what data either sees.
   const graph = useMemo(() => {
-    const dnsGraph = dnsToGraph(collection);
-    if (!subdomainCollection) return dnsGraph;
-    return mergeGraphs([dnsGraph, subdomainsToGraph(subdomainCollection)]);
-  }, [collection, subdomainCollection]);
+    const graphs = [dnsToGraph(collection)];
+    if (subdomainCollection) graphs.push(subdomainsToGraph(subdomainCollection));
+    if (certificateCollection) graphs.push(certificatesToGraph(certificateCollection));
+    return graphs.length === 1 ? graphs[0] : mergeGraphs(graphs);
+  }, [collection, subdomainCollection, certificateCollection]);
 
   // Local to the dashboard body (not lifted to App) since it's a pure view
   // preference, not investigation state -- it deliberately does NOT reset
@@ -327,6 +361,7 @@ function DashboardBody({
         <RecordsPanel collection={collection} />
         <RelatedEntitiesPanel collection={collection} />
         {subdomainCollection && <SubdomainsPanel collection={subdomainCollection} />}
+        {certificateCollection && <CertificatesPanel collection={certificateCollection} />}
         <ErrorsPanel collection={collection} />
         <Legend />
       </aside>

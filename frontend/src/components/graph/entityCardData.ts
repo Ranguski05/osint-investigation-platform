@@ -108,6 +108,30 @@ export function buildCardContent(
       break;
     }
 
+    case "certificate": {
+      // Unlike the cases above, a certificate's own metadata lives on
+      // the NODE itself, not an incoming edge -- see certificatesToGraph.ts
+      // for why (issuer/validity/fingerprint describe the certificate,
+      // not the "covered_by" edge pointing at it).
+      const issuer = node.data.issuer;
+      if (typeof issuer === "string" && issuer) {
+        fields.push({ label: "ISSUER", value: truncate(issuer, MAX_FIELD_VALUE_LENGTH) });
+      }
+
+      const notBefore = node.data.notBefore;
+      const notAfter = node.data.notAfter;
+      if (typeof notBefore === "string" && typeof notAfter === "string") {
+        fields.push({ label: "VALID", value: `${formatDate(notBefore)} → ${formatDate(notAfter)}` });
+      }
+
+      const status = node.data.status;
+      if (typeof status === "string") {
+        fields.push({ label: "STATUS", value: validityStatusLabel(status) });
+      }
+
+      break;
+    }
+
     default:
       break;
   }
@@ -131,4 +155,22 @@ function pushTtl(fields: CardField[], incoming: GraphEdge[]): void {
 
 function truncate(value: string, maxLength: number): string {
   return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+}
+
+/** ISO-8601 timestamp -> plain date, for compact display on a certificate card. */
+function formatDate(isoTimestamp: string): string {
+  return isoTimestamp.slice(0, 10);
+}
+
+function validityStatusLabel(status: string): string {
+  switch (status) {
+    case "current":
+      return "current";
+    case "expired":
+      return "expired";
+    case "not_yet_valid":
+      return "not yet valid";
+    default:
+      return "unknown";
+  }
 }
