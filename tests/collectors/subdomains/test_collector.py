@@ -21,17 +21,28 @@ from collectors.subdomains.models import (
     DnsValidationStatus,
     ResolvedRecord,
     SourceStatus,
+    SourceType,
     SubdomainCollectorConfig,
 )
 from collectors.subdomains.sources.base import RawCandidate, SubdomainSource
+from collectors.subdomains.sources.crtsh import CrtShSource
+from collectors.subdomains.sources.dns_bruteforce import DNSBruteforceSource
 
 
 class FakeSource(SubdomainSource):
-    def __init__(self, name: str, method: str, candidates: list[RawCandidate] | None = None, error: Exception | None = None):
+    def __init__(
+        self,
+        name: str,
+        method: str,
+        candidates: list[RawCandidate] | None = None,
+        error: Exception | None = None,
+        source_type: SourceType = SourceType.PASSIVE,
+    ):
         self.name = name
         self.method = method
         self._candidates = candidates or []
         self._error = error
+        self.source_type = source_type
         self.calls: list[str] = []
 
     def enumerate(self, domain: str, *, timeout: float) -> list[RawCandidate]:
@@ -217,6 +228,7 @@ class TestSourceFailureHandling:
         class ExplodingSource(SubdomainSource):
             name = "exploding"
             method = "boom"
+            source_type = SourceType.PASSIVE
 
             def enumerate(self, domain: str, *, timeout: float) -> list[RawCandidate]:
                 raise RuntimeError("bug in a hypothetical source")
@@ -343,3 +355,81 @@ class TestVersioning:
 
         assert result.collector.name == "subdomains"
         assert result.collector.version == SubdomainCollector.VERSION
+
+
+class TestSourceTypePropagation:
+    def test_source_type_recorded_on_success(self):
+        passive = FakeSource("passive_src", "m", [], source_type=SourceType.PASSIVE)
+        active = FakeSource("active_src", "m", [], source_type=SourceType.ACTIVE)
+        collector = SubdomainCollector(sources=[passive, active])
+
+        result = collector.collect("example.com")
+
+        types = {s.source: s.source_type for s in result.sources}
+        assert types == {"passive_src": SourceType.PASSIVE, "active_src": SourceType.ACTIVE}
+
+    def test_source_type_recorded_on_failure(self):
+        active = FakeSource("active_src", "m", error=SourceError("boom"), source_type=SourceType.ACTIVE)
+        collector = SubdomainCollector(sources=[active])
+
+        result = collector.collect("example.com")
+
+        assert result.sources[0].source_type == SourceType.ACTIVE
+
+    def test_real_sources_declare_expected_types(self):
+        assert CrtShSource.source_type == SourceType.PASSIVE
+        assert DNSBruteforceSource.source_type == SourceType.ACTIVE
+
+
+class TestMultiSourceIntegrationWithBruteforce:
+    """
+    Exercises certificate_transparency + dns_bruteforce running together
+    through the real collector -- the passive source is a FakeSource
+    (no HTTP), the active source is the real DNSBruteforceSource with
+    DNS mocked, proving the two independent sources merge correctly
+    through the one shared pipeline.
+    """
+
+    def test_same_hostname_from_ct_and_bruteforce_merges_into_one_observation(self):
+        ct_source = FakeSource(
+            "certificate_transparency", "crtsh", [RawCandidate("api.example.com", source_reference="1")]
+        )
+        bruteforce_source = FakeSource(
+            "dns_bruteforce", "wordlist", [RawCandidate("api.example.com", source_reference="api")],
+            source_type=SourceType.ACTIVE,
+        )
+        collector = SubdomainCollector(sources=[ct_source, bruteforce_source])
+
+        result = collector.collect("example.com")
+
+        assert len(result.observations) == 1
+        assert {e.source for e in result.observations[0].discovery} == {"certificate_transparency", "dns_bruteforce"}
+
+    def test_bruteforce_only_discovery_becomes_an_observation_and_relationship(self):
+        with patch("collectors.subdomains.sources.dns_bruteforce.detect_wildcard_ips", return_value=set()), patch(
+            "collectors.subdomains.sources.dns_bruteforce.validate_hostname",
+            return_value=(DnsValidationStatus.RESOLVED, [ResolvedRecord(type="A", value="1.2.3.4", ttl=300)]),
+        ):
+            bruteforce_source = DNSBruteforceSource(["api"], detect_wildcard=True)
+            collector = SubdomainCollector(sources=[bruteforce_source])
+
+            result = collector.collect("example.com")
+
+        assert result.status == CollectionStatus.SUCCESS
+        assert result.observations[0].hostname == "api.example.com"
+        assert result.observations[0].discovery[0].source == "dns_bruteforce"
+        assert result.observations[0].discovery[0].source_reference == "api"
+        assert result.related_entities[0].relationship == "discovered_subdomain"
+        assert result.sources[0].source_type == SourceType.ACTIVE
+
+    def test_bruteforce_failure_does_not_prevent_ct_discoveries(self):
+        ct_source = FakeSource("certificate_transparency", "crtsh", [RawCandidate("www.example.com")])
+        broken_bruteforce = FakeSource(
+            "dns_bruteforce", "wordlist", error=SourceError("resolver unavailable"), source_type=SourceType.ACTIVE
+        )
+        collector = SubdomainCollector(sources=[ct_source, broken_bruteforce])
+
+        result = collector.collect("example.com")
+
+        assert result.status == CollectionStatus.PARTIAL
+        assert result.observations[0].hostname == "www.example.com"

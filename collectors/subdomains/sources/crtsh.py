@@ -24,6 +24,7 @@ import urllib.error
 import urllib.request
 
 from ..exceptions import SourceError
+from ..models import SourceType
 from .base import RawCandidate, SubdomainSource
 
 CRTSH_URL = "https://crt.sh/"
@@ -39,6 +40,7 @@ class CrtShSource(SubdomainSource):
 
     name = "certificate_transparency"
     method = "crtsh"
+    source_type = SourceType.PASSIVE
 
     def enumerate(self, domain: str, *, timeout: float) -> list[RawCandidate]:
         # "%." is crt.sh's ILIKE-style wildcard prefix -- this matches

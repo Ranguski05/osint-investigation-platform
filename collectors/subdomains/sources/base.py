@@ -1,16 +1,19 @@
 """
-Abstraction for a passive subdomain discovery source.
+Abstraction for a subdomain discovery source (passive or active).
 
 Adding a new source means writing one class here that implements
 `enumerate()` and adding it to the collector's source list -- nothing in
 collector.py needs to change. This is the extension point the platform's
-future passive-DNS/other sources will use.
+future discovery sources (passive-DNS, DNS wordlist enumeration, etc.)
+will use.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+from ..models import SourceType
 
 
 @dataclass(frozen=True)
@@ -22,12 +25,13 @@ class RawCandidate:
 
     hostname: str
     # A small, source-specific identifier for provenance (e.g. a crt.sh
-    # certificate id). Optional -- not every source has one.
+    # certificate id, or the wordlist entry that produced this candidate
+    # for dns_bruteforce). Optional -- not every source has one.
     source_reference: str | None = None
 
 
 class SubdomainSource(ABC):
-    """A passive source of candidate hostnames for a target domain."""
+    """A source of candidate hostnames for a target domain."""
 
     #: Machine-readable source identifier used in provenance, e.g.
     #: "certificate_transparency". Stable across implementations of the
@@ -38,6 +42,12 @@ class SubdomainSource(ABC):
     #: than `name` -- useful if a source is later backed by more than
     #: one concrete implementation.
     method: str
+
+    #: Whether this source only observes existing public data (PASSIVE,
+    #: e.g. Certificate Transparency) or sends queries to the target's
+    #: own infrastructure to find candidates (ACTIVE, e.g. DNS wordlist
+    #: enumeration). Surfaced in SourceResult for honest reporting.
+    source_type: SourceType
 
     @abstractmethod
     def enumerate(self, domain: str, *, timeout: float) -> list[RawCandidate]:

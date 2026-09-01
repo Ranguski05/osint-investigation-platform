@@ -15,6 +15,9 @@ import sys
 
 from .collector import SubdomainCollector
 from .models import SubdomainCollection, SubdomainCollectorConfig
+from .sources.base import SubdomainSource
+from .sources.crtsh import CrtShSource
+from .sources.dns_bruteforce import DNSBruteforceSource, parse_wordlist
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -25,8 +28,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="subdomain-collector",
         description=(
-            "Passively discover subdomains of a target domain "
-            "using Certificate Transparency."
+            "Discover subdomains of a target domain, passively via "
+            "Certificate Transparency and optionally via active, "
+            "bounded DNS wordlist enumeration (--bruteforce)."
         ),
     )
 
@@ -115,6 +119,49 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--bruteforce",
+        action="store_true",
+        help=(
+            "Also discover subdomains via bounded, active DNS wordlist "
+            "enumeration, alongside the default Certificate Transparency "
+            "source."
+        ),
+    )
+
+    parser.add_argument(
+        "--wordlist",
+        type=str,
+        metavar="PATH",
+        help=(
+            "Path to a custom wordlist file, one word per line "
+            "(default: a small built-in list). Only used with "
+            "--bruteforce."
+        ),
+    )
+
+    parser.add_argument(
+        "--bruteforce-max-candidates",
+        type=int,
+        default=500,
+        metavar="N",
+        help=(
+            "Maximum number of wordlist entries to test "
+            "(default: 500)."
+        ),
+    )
+
+    parser.add_argument(
+        "--bruteforce-concurrency",
+        type=int,
+        default=5,
+        metavar="N",
+        help=(
+            "Maximum number of concurrent DNS queries during wordlist "
+            "enumeration (default: 5)."
+        ),
+    )
+
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose/debug logging.",
@@ -159,6 +206,15 @@ def main() -> int:
     if args.dns_lifetime <= 0:
         parser.error("--dns-lifetime must be greater than zero.")
 
+    if args.bruteforce_max_candidates <= 0:
+        parser.error("--bruteforce-max-candidates must be greater than zero.")
+
+    if args.bruteforce_concurrency <= 0:
+        parser.error("--bruteforce-concurrency must be greater than zero.")
+
+    if args.wordlist and not args.bruteforce:
+        parser.error("--wordlist requires --bruteforce.")
+
     config = SubdomainCollectorConfig(
         max_candidates=args.max_candidates,
         validate_dns=args.validate_dns,
@@ -169,7 +225,29 @@ def main() -> int:
         detect_wildcard=not args.no_wildcard_detection,
     )
 
-    collector = SubdomainCollector(config=config)
+    sources: list[SubdomainSource] = [CrtShSource()]
+
+    if args.bruteforce:
+        wordlist = None
+        if args.wordlist:
+            try:
+                with open(args.wordlist, "r", encoding="utf-8") as handle:
+                    wordlist = parse_wordlist(handle.read())
+            except OSError as exc:
+                parser.error(f"Could not read --wordlist file: {exc}")
+
+        sources.append(
+            DNSBruteforceSource(
+                wordlist,
+                nameservers=args.nameservers,
+                dns_lifetime=args.dns_lifetime,
+                concurrency=args.bruteforce_concurrency,
+                max_words=args.bruteforce_max_candidates,
+                detect_wildcard=not args.no_wildcard_detection,
+            )
+        )
+
+    collector = SubdomainCollector(config=config, sources=sources)
     result = collector.collect(args.target)
 
     if args.json:
@@ -198,7 +276,10 @@ def _print_human(result: SubdomainCollection) -> None:
     print()
 
     for source in result.sources:
-        line = f"  source={source.source} status={source.status.value} candidates={source.candidate_count}"
+        line = (
+            f"  source={source.source} type={source.source_type.value} "
+            f"status={source.status.value} candidates={source.candidate_count}"
+        )
         if source.error_type:
             line += f" error={source.error_type}: {source.message}"
         print(line)

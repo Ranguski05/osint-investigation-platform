@@ -18,7 +18,14 @@ export class SubdomainApiDataSource implements SubdomainDataSource {
     let response: Response;
 
     try {
-      response = await fetch(`${this.baseUrl}/investigations/subdomains/${encodeURIComponent(target)}`);
+      // enable_bruteforce=true turns on the active DNS wordlist source
+      // (see collectors/subdomains/sources/dns_bruteforce.py) alongside
+      // the default Certificate Transparency source -- without it, this
+      // request only ever exercises crt.sh, which leaves the panel empty
+      // whenever crt.sh itself is unavailable.
+      response = await fetch(
+        `${this.baseUrl}/investigations/subdomains/${encodeURIComponent(target)}?enable_bruteforce=true`
+      );
     } catch {
       throw new Error(`Could not reach the investigation service at ${this.baseUrl}. Is the backend running?`);
     }

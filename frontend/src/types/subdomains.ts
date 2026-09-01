@@ -10,6 +10,8 @@ export type SubdomainCollectionStatus = "success" | "partial" | "failed";
 
 export type SourceStatus = "success" | "failed";
 
+export type SourceType = "passive" | "active";
+
 export type DnsValidationStatus = "not_checked" | "resolved" | "unresolved";
 
 export interface SubdomainTarget {
@@ -49,6 +51,7 @@ export interface SourceResult {
   candidate_count: number;
   error_type: string | null;
   message: string | null;
+  source_type: SourceType;
 }
 
 export interface SubdomainEntityRelationship {

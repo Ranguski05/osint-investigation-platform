@@ -18,6 +18,7 @@ from collectors.subdomains.models import (
     ResolvedRecord,
     SourceResult,
     SourceStatus,
+    SourceType,
     SubdomainCollection,
     SubdomainCollectorConfig,
     SubdomainObservation,
@@ -132,6 +133,23 @@ class TestSerialization:
 
         assert data["sources"][0]["status"] == "failed"
         assert data["sources"][0]["error_type"] == "SOURCE_ERROR"
+
+    def test_source_type_serializes(self):
+        source_result = SourceResult(
+            source="dns_bruteforce",
+            status=SourceStatus.SUCCESS,
+            candidate_count=3,
+            source_type=SourceType.ACTIVE,
+        )
+
+        data = _sample_collection(sources=[source_result]).to_dict()
+
+        assert data["sources"][0]["source_type"] == "active"
+
+    def test_source_type_defaults_to_passive(self):
+        source_result = SourceResult(source="certificate_transparency", status=SourceStatus.SUCCESS, candidate_count=1)
+
+        assert source_result.source_type == SourceType.PASSIVE
 
 
 class TestCollectorInfo:

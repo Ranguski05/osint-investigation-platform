@@ -23,6 +23,9 @@ from collectors.dns.collector import DNSCollector
 from collectors.dns.models import DNSCollectorConfig
 from collectors.subdomains.collector import SubdomainCollector
 from collectors.subdomains.models import SubdomainCollectorConfig
+from collectors.subdomains.sources.base import SubdomainSource
+from collectors.subdomains.sources.crtsh import CrtShSource
+from collectors.subdomains.sources.dns_bruteforce import DNSBruteforceSource
 
 # The default DNS resolver used when a request does not specify one.
 # Configurable per-environment so it is never hardcoded into the collector
@@ -117,6 +120,34 @@ def investigate_subdomains(
         description="Attempt A/AAAA/CNAME resolution for each discovered hostname.",
     ),
     timeout: float = Query(default=5.0, gt=0, description="HTTP request timeout for discovery sources."),
+    enable_bruteforce: bool = Query(
+        default=False,
+        description=(
+            "Also discover subdomains via bounded, active DNS wordlist "
+            "enumeration (sends DNS queries to the target's own "
+            "infrastructure), using the built-in wordlist. Off by "
+            "default -- Certificate Transparency alone is passive."
+        ),
+    ),
+    bruteforce_max_candidates: int = Query(
+        default=100,
+        gt=0,
+        le=500,
+        description=(
+            "Maximum number of wordlist entries to test. Capped at 500 "
+            "regardless of the requested value, to bound how much active "
+            "DNS traffic a single API request can generate."
+        ),
+    ),
+    bruteforce_concurrency: int = Query(
+        default=5,
+        gt=0,
+        le=10,
+        description=(
+            "Maximum number of concurrent DNS queries during wordlist "
+            "enumeration. Capped at 10 regardless of the requested value."
+        ),
+    ),
 ) -> dict:
     """
     Run the subdomain collector against `target` and return its
@@ -126,6 +157,12 @@ def investigate_subdomains(
     call the DNS collector, and a failure here never affects a DNS
     investigation already on screen (see frontend's App.tsx, which
     treats this as optional graph enrichment).
+
+    A custom wordlist is not accepted over this HTTP endpoint -- only
+    the built-in default -- since accepting an arbitrary file path or
+    payload from a remote caller to drive active DNS enumeration is a
+    needless attack surface for a local dev API. Use the CLI's
+    `--wordlist` for a custom list.
     """
 
     if not target or not target.strip():
@@ -137,7 +174,22 @@ def investigate_subdomains(
         request_timeout=timeout,
     )
 
-    collector = SubdomainCollector(config=config)
+    sources: list[SubdomainSource] = [CrtShSource()]
+    if enable_bruteforce:
+        sources.append(
+            DNSBruteforceSource(
+                concurrency=bruteforce_concurrency,
+                max_words=bruteforce_max_candidates,
+                # Reuses the same DEFAULT_NAMESERVER already used by the
+                # DNS endpoint above, for the same reason: this process's
+                # system resolver configuration is not something to rely
+                # on for a local dev API (see investigate_dns's nameserver
+                # handling).
+                nameservers=[DEFAULT_NAMESERVER],
+            )
+        )
+
+    collector = SubdomainCollector(config=config, sources=sources)
     result = collector.collect(target)
 
     return result.to_dict()

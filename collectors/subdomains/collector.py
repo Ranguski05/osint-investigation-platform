@@ -205,6 +205,7 @@ class SubdomainCollector:
                 source=source.name,
                 status=SourceStatus.SUCCESS,
                 candidate_count=accepted,
+                source_type=source.source_type,
             )
         )
 
@@ -222,6 +223,7 @@ class SubdomainCollector:
                 candidate_count=0,
                 error_type=error_type,
                 message=message,
+                source_type=source.source_type,
             )
         )
         collection.errors.append(

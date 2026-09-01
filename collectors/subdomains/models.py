@@ -31,6 +31,20 @@ class SourceStatus(str, Enum):
     FAILED = "failed"
 
 
+class SourceType(str, Enum):
+    """
+    Whether a discovery source observes existing public data (passive) or
+    actively queries infrastructure to find candidates (active).
+
+    This distinction matters for responsible-use reporting: a passive
+    source (e.g. Certificate Transparency) never sends traffic to the
+    target; an active source (e.g. DNS wordlist enumeration) does.
+    """
+
+    PASSIVE = "passive"
+    ACTIVE = "active"
+
+
 class DnsValidationStatus(str, Enum):
     """
     Whether a discovered hostname's DNS resolution was checked, and if so,
@@ -124,7 +138,14 @@ class SourceResult:
     status: SourceStatus
     candidate_count: int
     error_type: str | None = None
+    # `message` also carries non-error, informational notices for an
+    # otherwise-successful source (e.g. a wildcard-DNS notice from
+    # dns_bruteforce) -- not exclusively an error field.
     message: str | None = None
+    # Defaults to PASSIVE rather than being required so every existing
+    # call site/test that predates this field keeps working unchanged;
+    # collector.py always passes the source's real value explicitly.
+    source_type: SourceType = SourceType.PASSIVE
 
 
 @dataclass
@@ -181,6 +202,7 @@ class SubdomainCollection:
 
         for source_result, source_data in zip(self.sources, data["sources"]):
             source_data["status"] = source_result.status.value
+            source_data["source_type"] = source_result.source_type.value
 
         return data
 
