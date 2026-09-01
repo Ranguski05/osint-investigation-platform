@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -8,12 +8,13 @@ import {
   useEdgesState,
   useNodesState,
   type Edge,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { InvestigationGraph as GraphData } from "../../types/graph";
 import type { SubdomainCollection } from "../../types/subdomains";
 import { connectedTo } from "./InvestigationGraph";
-import { computeCardPositions } from "./cardLayout";
+import { computeCardPositions, computeInitialFitOptions } from "./cardLayout";
 import { buildCardContent, buildHostnameDiscoveryMap } from "./entityCardData";
 import { EntityCard, type EntityCardNode } from "./EntityCard";
 
@@ -31,8 +32,13 @@ function edgeStyle(active: boolean) {
       width: 16,
       height: 16,
     },
-    labelStyle: { fill: active ? EDGE_ACTIVE_COLOR : "#6b7280", fontSize: 10, fontWeight: 600 },
-    labelBgStyle: { fill: "rgba(5, 7, 12, 0.85)" },
+    labelStyle: {
+      fill: active ? EDGE_ACTIVE_COLOR : "#6b7280",
+      fontSize: active ? 10 : 9,
+      fontWeight: active ? 600 : 500,
+      opacity: active ? 1 : 0.6,
+    },
+    labelBgStyle: { fill: "rgba(5, 7, 12, 0.85)", fillOpacity: active ? 0.85 : 0.55 },
     zIndex: active ? 1 : 0,
   };
 }
@@ -87,8 +93,11 @@ export function InvestigationGraph2D({
   const focusId = selectedNodeId ?? hoveredNodeId;
   const connectedNodeIds = useMemo(() => connectedTo(focusId, graph.edges), [focusId, graph.edges]);
 
+  const rootId = graph.nodes[0]?.id ?? "";
+
+  const initialFit = useMemo(() => computeInitialFitOptions(graph.nodes, rootId), [graph.nodes, rootId]);
+
   const elements = useMemo(() => {
-    const rootId = graph.nodes[0]?.id ?? "";
     const positions = computeCardPositions(graph.nodes, graph.edges, rootId);
 
     const nodes: EntityCardNode[] = graph.nodes.map((node) => ({
@@ -123,9 +132,10 @@ export function InvestigationGraph2D({
         key={resetToken}
         initialNodes={elements.nodes}
         initialEdges={elements.edges}
+        initialFitNodes={initialFit.nodes}
+        initialFitPadding={initialFit.padding}
+        initialFitMinZoom={initialFit.minZoom}
         selectedNodeId={selectedNodeId}
-        focusId={focusId}
-        connectedNodeIds={connectedNodeIds}
         onSelectNode={onSelectNode}
         onHoverNode={onHoverNode}
       />
@@ -136,9 +146,10 @@ export function InvestigationGraph2D({
 interface GraphCanvasProps {
   initialNodes: EntityCardNode[];
   initialEdges: Edge[];
+  initialFitNodes: { id: string }[];
+  initialFitPadding: number;
+  initialFitMinZoom?: number;
   selectedNodeId: string | null;
-  focusId: string | null;
-  connectedNodeIds: Set<string>;
   onSelectNode: (id: string | null) => void;
   onHoverNode: (id: string | null) => void;
 }
@@ -146,44 +157,89 @@ interface GraphCanvasProps {
 function GraphCanvas({
   initialNodes,
   initialEdges,
+  initialFitNodes,
+  initialFitPadding,
+  initialFitMinZoom,
   selectedNodeId,
-  focusId,
-  connectedNodeIds,
   onSelectNode,
   onHoverNode,
 }: GraphCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<EntityCardNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
+  const reactFlowRef = useRef<ReactFlowInstance<EntityCardNode, Edge> | null>(null);
+  const isFirstFit = useRef(true);
+  const pendingFit = useRef<{ nodes: { id: string }[]; padding: number; minZoom?: number } | null>(null);
 
-  // Selection/hover changed without a reset (see the key-remount above) --
-  // update each card/edge's visual state in place, never touching
-  // position, so a dragged card stays exactly where the investigator put
-  // it while hovering/selecting elsewhere.
+  // React Flow's `fitView`/`fitViewOptions` props only take effect ON
+  // MOUNT -- changing them later (e.g. the entity-type filter narrowing
+  // which nodes exist, see EntityTypeFilter/filterGraph.ts) does NOT
+  // re-trigger a fit on its own. Without this, filtering while already in
+  // 2D mode would silently leave the camera framed on wherever it was
+  // before (typically centered on the now-hidden target), showing an
+  // arbitrary, badly-cropped slice of the new (usually much smaller) node
+  // set instead of a proper fit.
+  //
+  // Re-fitting needs to happen imperatively, and only AFTER the node/edge
+  // sync effect below has actually committed the new set (fitView needs
+  // those nodes' bounds to already exist in React Flow's own store, which
+  // only happens on the render after `setNodes`/`setEdges` runs) -- so
+  // this just records what to fit to; the effect further below (watching
+  // the actual `nodes`/`edges` state) performs it once that's true. This
+  // also naturally never fires mid-drag: dragging updates `nodes` via
+  // `onNodesChange`, not this ref, so the guard there stays a no-op then.
   useEffect(() => {
-    setNodes((current) =>
-      current.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          selected: node.id === selectedNodeId,
-          dimmed: focusId !== null && !connectedNodeIds.has(node.id),
-        },
-      }))
-    );
-    setEdges((current) =>
-      current.map((edge) => {
-        const active = focusId !== null && (edge.source === focusId || edge.target === focusId);
-        return { ...edge, ...edgeStyle(active) };
-      })
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNodeId, focusId, connectedNodeIds]);
+    if (isFirstFit.current) {
+      // The `fitView` prop below already handles the initial mount.
+      isFirstFit.current = false;
+      return;
+    }
+    pendingFit.current = { nodes: initialFitNodes, padding: initialFitPadding, minZoom: initialFitMinZoom };
+  }, [initialFitNodes, initialFitPadding, initialFitMinZoom]);
+
+  // Re-sync from the latest computed nodes/edges without a full remount
+  // (see the key-remount above, reserved for actual camera resets) --
+  // this runs for selection/hover changes AND for the entity-type filter
+  // narrowing/widening which nodes exist at all (see EntityTypeFilter /
+  // filterGraph.ts). Card content, styling, and the node/edge *set* itself
+  // always mirror `initialNodes`/`initialEdges`; only `position` is taken
+  // from the currently-mounted node instead, so a card the investigator
+  // dragged stays exactly where they put it across any of these updates,
+  // while a node that appears or disappears (filter change) is added or
+  // removed immediately rather than waiting for a remount.
+  useEffect(() => {
+    setNodes((current) => {
+      const currentById = new Map(current.map((node) => [node.id, node]));
+      return initialNodes.map((incoming) => {
+        const existing = currentById.get(incoming.id);
+        return existing ? { ...incoming, position: existing.position } : incoming;
+      });
+    });
+    setEdges(initialEdges);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+  // Performs a fit scheduled above, once `nodes`/`edges` (React Flow's
+  // actual rendered state) reflect the new filtered set.
+  useEffect(() => {
+    if (!pendingFit.current) return;
+    const fit = pendingFit.current;
+    pendingFit.current = null;
+    reactFlowRef.current?.fitView({
+      nodes: fit.nodes,
+      padding: fit.padding,
+      duration: 300,
+      maxZoom: 0.9,
+      minZoom: fit.minZoom,
+    });
+  }, [nodes, edges]);
 
   return (
     <ReactFlow
       nodeTypes={nodeTypes}
       nodes={nodes}
       edges={edges}
+      onInit={(instance) => {
+        reactFlowRef.current = instance;
+      }}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onNodeClick={(_event, node) => onSelectNode(node.id === selectedNodeId ? null : node.id)}
@@ -193,8 +249,14 @@ function GraphCanvas({
       elementsSelectable={false}
       nodesConnectable={false}
       fitView
-      fitViewOptions={{ padding: 0.2, duration: 0 }}
-      minZoom={0.1}
+      fitViewOptions={{
+        nodes: initialFitNodes,
+        padding: initialFitPadding,
+        duration: 0,
+        maxZoom: 0.9,
+        minZoom: initialFitMinZoom,
+      }}
+      minZoom={0.05}
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
     >

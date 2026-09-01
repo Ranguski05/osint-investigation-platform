@@ -6,9 +6,11 @@ import { subdomainsToGraph } from "../data/subdomainsToGraph";
 import { mergeGraphs } from "../data/mergeGraphs";
 import type { DnsCollection } from "../types/dns";
 import type { SubdomainCollection } from "../types/subdomains";
+import { filterGraphByEntityKind, countNodesByKind, type EntityFilterValue } from "../data/filterGraph";
 import { InvestigationGraph } from "./graph/InvestigationGraph";
 import { InvestigationGraph2D } from "./graph/InvestigationGraph2D";
 import { GraphViewToggle, type GraphViewMode } from "./graph/GraphViewToggle";
+import { EntityTypeFilter } from "./graph/EntityTypeFilter";
 import { TargetSearch } from "./TargetSearch";
 import { StatusView } from "./StatusView";
 import { InvestigationBanner } from "./InvestigationBanner";
@@ -251,6 +253,30 @@ function DashboardBody({
     [onHoverNode]
   );
 
+  // Also a pure view preference (same reasoning as viewMode above), and
+  // deliberately shared by both representations: this is the ONE piece of
+  // filter state, applied to `graph` below to derive what 2D and 3D each
+  // render, rather than each representation tracking its own copy.
+  const [entityFilter, setEntityFilter] = useState<EntityFilterValue>("all");
+
+  const entityCounts = useMemo(() => countNodesByKind(graph), [graph]);
+
+  // Presentation-only narrowing of the already-merged graph -- see
+  // filterGraph.ts. `graph` itself (the full merged DNS + subdomain data)
+  // is never mutated or recomputed here; 2D and 3D both render whatever
+  // this produces, so the filter can never drift between representations.
+  const visibleGraph = useMemo(() => filterGraphByEntityKind(graph, entityFilter), [graph, entityFilter]);
+
+  const visibleNodeIds = useMemo(() => new Set(visibleGraph.nodes.map((node) => node.id)), [visibleGraph]);
+
+  // A selected/hovered node that the current filter hides simply isn't
+  // rendered -- selectedNodeId/hoveredNodeId themselves are left alone, so
+  // the Node Inspector cleanly disappears instead of showing a node that
+  // isn't on screen, and the exact same selection reappears automatically
+  // if the investigator switches back to a filter that includes it again.
+  const effectiveSelectedNodeId = selectedNodeId && visibleNodeIds.has(selectedNodeId) ? selectedNodeId : null;
+  const effectiveHoveredNodeId = hoveredNodeId && visibleNodeIds.has(hoveredNodeId) ? hoveredNodeId : null;
+
   return (
     <main className="dashboard-body">
       <aside className="dashboard-column dashboard-column-left">
@@ -262,30 +288,38 @@ function DashboardBody({
         <div className="graph-controls">
           <button onClick={onResetCamera}>Reset view</button>
         </div>
-        <GraphViewToggle mode={viewMode} onChange={handleViewModeChange} />
+        <div className="graph-toolbar">
+          <EntityTypeFilter
+            value={entityFilter}
+            onChange={setEntityFilter}
+            counts={entityCounts}
+            totalCount={graph.nodes.length}
+          />
+          <GraphViewToggle mode={viewMode} onChange={handleViewModeChange} />
+        </div>
         {banner}
         {viewMode === "3d" ? (
           <InvestigationGraph
-            graph={graph}
-            selectedNodeId={selectedNodeId}
-            hoveredNodeId={hoveredNodeId}
+            graph={visibleGraph}
+            selectedNodeId={effectiveSelectedNodeId}
+            hoveredNodeId={effectiveHoveredNodeId}
             onSelectNode={onSelectNode}
             onHoverNode={onHoverNode}
             resetToken={resetToken}
           />
         ) : (
           <InvestigationGraph2D
-            graph={graph}
+            graph={visibleGraph}
             subdomainCollection={subdomainCollection}
-            selectedNodeId={selectedNodeId}
-            hoveredNodeId={hoveredNodeId}
+            selectedNodeId={effectiveSelectedNodeId}
+            hoveredNodeId={effectiveHoveredNodeId}
             onSelectNode={onSelectNode}
             onHoverNode={onHoverNode}
             resetToken={resetToken}
           />
         )}
-        {selectedNodeId && (
-          <NodeInspector graph={graph} selectedNodeId={selectedNodeId} onClose={() => onSelectNode(null)} />
+        {effectiveSelectedNodeId && (
+          <NodeInspector graph={graph} selectedNodeId={effectiveSelectedNodeId} onClose={() => onSelectNode(null)} />
         )}
       </div>
 

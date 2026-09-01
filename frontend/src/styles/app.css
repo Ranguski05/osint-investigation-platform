@@ -200,14 +200,43 @@ body,
   color: var(--accent);
 }
 
-/* Compact 2D/3D segmented control, top-right of the graph viewport --
-   mirrors .graph-controls' positioning/materials but on the opposite
-   corner so the two never overlap. */
-.graph-view-toggle {
+/* Top-right graph toolbar -- mirrors .graph-controls' positioning/materials
+   but on the opposite corner so the two never overlap. Houses the entity
+   filter and the 2D/3D toggle side by side, like one continuous control
+   strip. */
+.graph-toolbar {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entity-type-filter {
+  background: rgba(11, 15, 24, 0.85);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  max-width: 180px;
+}
+
+.entity-type-filter:hover {
+  border-color: var(--accent);
+}
+
+.entity-type-filter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.graph-view-toggle {
   display: flex;
   background: rgba(11, 15, 24, 0.85);
   border: 1px solid var(--panel-border);
@@ -284,13 +313,13 @@ body,
 .entity-card {
   position: relative;
   display: flex;
-  width: 220px;
+  width: 240px;
   background: rgba(11, 15, 24, 0.94);
   border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   cursor: grab;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
   transition: opacity 150ms ease, box-shadow 150ms ease;
 }
 
@@ -306,14 +335,14 @@ body,
 .entity-card-body {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .entity-card-type {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -321,7 +350,7 @@ body,
 }
 
 .entity-card-value {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -330,17 +359,17 @@ body,
 }
 
 .entity-card-fields {
-  margin: 4px 0 0 0;
+  margin: 6px 0 0 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .entity-card-field {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .entity-card-field dt {
