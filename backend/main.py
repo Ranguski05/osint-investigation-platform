@@ -21,6 +21,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from collectors.dns.collector import DNSCollector
 from collectors.dns.models import DNSCollectorConfig
+from collectors.subdomains.collector import SubdomainCollector
+from collectors.subdomains.models import SubdomainCollectorConfig
 
 # The default DNS resolver used when a request does not specify one.
 # Configurable per-environment so it is never hardcoded into the collector
@@ -97,6 +99,45 @@ def investigate_dns(
     )
 
     collector = DNSCollector(config=config)
+    result = collector.collect(target)
+
+    return result.to_dict()
+
+
+@app.get("/api/investigations/subdomains/{target}")
+def investigate_subdomains(
+    target: str,
+    max_candidates: int = Query(
+        default=200,
+        gt=0,
+        description="Maximum number of discovered candidate hostnames to keep.",
+    ),
+    validate_dns: bool = Query(
+        default=False,
+        description="Attempt A/AAAA/CNAME resolution for each discovered hostname.",
+    ),
+    timeout: float = Query(default=5.0, gt=0, description="HTTP request timeout for discovery sources."),
+) -> dict:
+    """
+    Run the subdomain collector against `target` and return its
+    structured result.
+
+    Independent of /api/investigations/dns -- this collector does not
+    call the DNS collector, and a failure here never affects a DNS
+    investigation already on screen (see frontend's App.tsx, which
+    treats this as optional graph enrichment).
+    """
+
+    if not target or not target.strip():
+        raise HTTPException(status_code=400, detail="Target must not be empty.")
+
+    config = SubdomainCollectorConfig(
+        max_candidates=max_candidates,
+        validate_dns=validate_dns,
+        request_timeout=timeout,
+    )
+
+    collector = SubdomainCollector(config=config)
     result = collector.collect(target)
 
     return result.to_dict()
