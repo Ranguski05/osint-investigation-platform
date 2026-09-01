@@ -4,7 +4,7 @@ interface RecordsPanelProps {
   collection: DnsCollection;
 }
 
-const RECORD_ORDER = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "CAA", "PTR"];
+const RECORD_ORDER = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "CAA", "PTR", "DNSKEY", "DS"];
 
 /**
  * Renders every DNS record grouped by type, in a format closer to how an
@@ -54,6 +54,10 @@ function RecordItem({ record }: { record: DnsRecord }) {
       return <SoaRecordItem record={record} />;
     case "CAA":
       return <CaaRecordItem record={record} />;
+    case "DNSKEY":
+      return <DnskeyRecordItem record={record} />;
+    case "DS":
+      return <DsRecordItem record={record} />;
     case "TXT":
       // dnspython's to_text() already wraps TXT content in quotes
       // (e.g. `"v=spf1 -all"`), so the raw value is rendered as-is.
@@ -146,6 +150,39 @@ function CaaRecordItem({ record }: { record: DnsRecord }) {
         <span>Flags: {String(attrs.flags ?? "—")}</span>
         <RecordMeta record={record} inline />
       </div>
+    </li>
+  );
+}
+
+function DnskeyRecordItem({ record }: { record: DnsRecord }) {
+  const attrs = record.attributes;
+
+  return (
+    <li className="record-item">
+      <span className="record-name">{record.name}</span>
+      <div className="record-attrs">
+        <span>Flags: {String(attrs.flags ?? "—")}</span>
+        <span>Protocol: {String(attrs.protocol ?? "—")}</span>
+        <span>Algorithm: {String(attrs.algorithm ?? "—")}</span>
+        <RecordMeta record={record} inline />
+      </div>
+    </li>
+  );
+}
+
+function DsRecordItem({ record }: { record: DnsRecord }) {
+  const attrs = record.attributes;
+
+  return (
+    <li className="record-item">
+      <span className="record-name">{record.name}</span>
+      <div className="record-attrs">
+        <span>Key tag: {String(attrs.key_tag ?? "—")}</span>
+        <span>Algorithm: {String(attrs.algorithm ?? "—")}</span>
+        <span>Digest type: {String(attrs.digest_type ?? "—")}</span>
+        <RecordMeta record={record} inline />
+      </div>
+      {typeof attrs.digest === "string" && <code className="record-value">{attrs.digest}</code>}
     </li>
   );
 }

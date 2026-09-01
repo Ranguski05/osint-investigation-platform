@@ -56,6 +56,19 @@ def investigate_dns(
     ),
     timeout: float = Query(default=3.0, gt=0),
     lifetime: float = Query(default=5.0, gt=0),
+    include_dnssec: bool = Query(
+        default=False,
+        description="Also collect DNSKEY/DS and report whether the zone appears signed (presence check, not full validation).",
+    ),
+    max_related_hosts: int = Query(
+        default=10,
+        ge=0,
+        description="Upper bound on how many related hostnames (from NS/MX/CNAME) get their own A/AAAA resolved.",
+    ),
+    resolve_ptr_for_discovered_ips: bool = Query(
+        default=False,
+        description="Also attempt a reverse (PTR) lookup for IPs discovered via A/AAAA records, bounded by max_related_hosts.",
+    ),
 ) -> dict:
     """
     Run the DNS collector against `target` and return its structured result.
@@ -78,6 +91,9 @@ def investigate_dns(
         nameservers=[resolved_nameserver] if resolved_nameserver else None,
         timeout=timeout,
         lifetime=lifetime,
+        include_dnssec=include_dnssec,
+        max_related_hosts=max_related_hosts,
+        resolve_ptr_for_discovered_ips=resolve_ptr_for_discovered_ips,
     )
 
     collector = DNSCollector(config=config)

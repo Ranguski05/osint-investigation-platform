@@ -143,6 +143,11 @@ class DNSCollection:
         default_factory=list
     )
 
+    # None means "not checked" (config.include_dnssec was False).
+    # True/False only reflects whether the zone published DNSKEY records --
+    # this is a presence check, not cryptographic chain validation.
+    dnssec_signed: bool | None = None
+
     def to_dict(self) -> dict[str, Any]:
         """
         Convert the collection into a JSON-serializable dictionary.
@@ -179,11 +184,31 @@ class DNSCollectorConfig:
 
     related_resolution_depth: int = 1
 
+    # Upper bound on how many distinct related hostnames (from NS/MX/CNAME)
+    # get their own A/AAAA resolved. A handful of large-but-legitimate zones
+    # publish dozens of NS/MX records; without a cap, one investigation
+    # could silently balloon into 80+ extra queries.
+    max_related_hosts: int = 10
+
+    # When True, also collect DNSKEY/DS for the target and derive
+    # DNSCollection.dnssec_signed from whether any DNSKEY was found.
+    # Off by default: it is a second round-trip most investigations do not
+    # need, and some resolvers are slower to answer these query types.
+    include_dnssec: bool = False
+
+    # When True, also attempt a PTR lookup for IPs discovered via A/AAAA
+    # records during a domain investigation (not just when the target
+    # itself is an IP). Off by default and bounded by max_related_hosts,
+    # for the same reason related-host resolution is bounded: it is an
+    # additional round of queries the caller must opt into.
+    resolve_ptr_for_discovered_ips: bool = False
+
     # Core DNS record types collected by default.
     #
     # DNSSEC-specific records are deliberately excluded from the
     # default collection because they are specialized and can make
     # ordinary collection unnecessarily slow on some resolvers.
+    # See `include_dnssec` to opt into DNSKEY/DS collection.
     record_types: tuple[str, ...] = (
         "A",
         "AAAA",

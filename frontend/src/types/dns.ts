@@ -40,9 +40,14 @@ export interface DnsRecordAttributes {
   retry?: number; // SOA
   expire?: number; // SOA
   minimum?: number; // SOA
-  flags?: number; // CAA
+  flags?: number; // CAA, DNSKEY
   tag?: string; // CAA
   value?: string; // CAA
+  protocol?: number; // DNSKEY
+  algorithm?: number; // DNSKEY, DS
+  key_tag?: number; // DS
+  digest_type?: number; // DS
+  digest?: string; // DS
   [key: string]: unknown;
 }
 
@@ -87,4 +92,6 @@ export interface DnsCollection {
   related_entities: EntityRelationship[];
   queries: DnsQueryMetadata[];
   errors: CollectionError[];
+  /** null = not checked (collector's include_dnssec was off); a plain presence check, not full chain validation. */
+  dnssec_signed: boolean | null;
 }

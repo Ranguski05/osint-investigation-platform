@@ -1,9 +1,9 @@
-﻿{
+{
     "target": {
-        "value": "riotgames.com",
+        "value": "example.com",
         "type": "domain"
     },
-    "observed_at": "2026-08-31T20:34:50.283Z",
+    "observed_at": "2026-09-01T09:41:22.656Z",
     "collector": {
         "name": "dns",
         "version": "1.0.0"
@@ -12,1102 +12,339 @@
     "records": [
         {
             "type": "A",
-            "name": "riotgames.com",
-            "value": "23.212.50.157",
-            "ttl": 20,
+            "name": "example.com",
+            "value": "172.66.147.243",
+            "ttl": 300,
             "attributes": {}
         },
         {
             "type": "A",
-            "name": "riotgames.com",
-            "value": "23.212.50.155",
-            "ttl": 20,
+            "name": "example.com",
+            "value": "104.20.23.154",
+            "ttl": 300,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "example.com",
+            "value": "2606:4700:8d95:72db:f2ca:0:ef6b:ff98",
+            "ttl": 60,
             "attributes": {}
         },
         {
             "type": "MX",
-            "name": "riotgames.com",
-            "value": "alt1.aspmx.l.google.com",
-            "ttl": 300,
+            "name": "example.com",
+            "value": ".",
+            "ttl": 240,
             "attributes": {
-                "priority": 20
-            }
-        },
-        {
-            "type": "MX",
-            "name": "riotgames.com",
-            "value": "aspmx3.googlemail.com",
-            "ttl": 300,
-            "attributes": {
-                "priority": 30
-            }
-        },
-        {
-            "type": "MX",
-            "name": "riotgames.com",
-            "value": "aspmx2.googlemail.com",
-            "ttl": 300,
-            "attributes": {
-                "priority": 30
-            }
-        },
-        {
-            "type": "MX",
-            "name": "riotgames.com",
-            "value": "aspmx.l.google.com",
-            "ttl": 300,
-            "attributes": {
-                "priority": 10
-            }
-        },
-        {
-            "type": "MX",
-            "name": "riotgames.com",
-            "value": "alt2.aspmx.l.google.com",
-            "ttl": 300,
-            "attributes": {
-                "priority": 20
+                "priority": 0
             }
         },
         {
             "type": "NS",
-            "name": "riotgames.com",
-            "value": "dns4.p04.nsone.net",
-            "ttl": 60,
+            "name": "example.com",
+            "value": "elliott.ns.cloudflare.com",
+            "ttl": 20107,
             "attributes": {}
         },
         {
             "type": "NS",
-            "name": "riotgames.com",
-            "value": "dns2.p04.nsone.net",
-            "ttl": 60,
-            "attributes": {}
-        },
-        {
-            "type": "NS",
-            "name": "riotgames.com",
-            "value": "dns1.p04.nsone.net",
-            "ttl": 60,
-            "attributes": {}
-        },
-        {
-            "type": "NS",
-            "name": "riotgames.com",
-            "value": "ns04.riotdns.com",
-            "ttl": 60,
-            "attributes": {}
-        },
-        {
-            "type": "NS",
-            "name": "riotgames.com",
-            "value": "ns02.riotdns.com",
-            "ttl": 60,
-            "attributes": {}
-        },
-        {
-            "type": "NS",
-            "name": "riotgames.com",
-            "value": "ns03.riotdns.com",
-            "ttl": 60,
-            "attributes": {}
-        },
-        {
-            "type": "NS",
-            "name": "riotgames.com",
-            "value": "dns3.p04.nsone.net",
-            "ttl": 60,
-            "attributes": {}
-        },
-        {
-            "type": "NS",
-            "name": "riotgames.com",
-            "value": "ns01.riotdns.com",
-            "ttl": 60,
+            "name": "example.com",
+            "value": "hera.ns.cloudflare.com",
+            "ttl": 20107,
             "attributes": {}
         },
         {
             "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"mixpanel-domain-verify=f3f9250d-6edf-4189-8b64-14002e09908e\"",
-            "ttl": 600,
+            "name": "example.com",
+            "value": "\"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9\"",
+            "ttl": 300,
             "attributes": {}
         },
         {
             "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=lHeWY50rR0F_moCYpTHOrMKMrpcFZ3-ndz_8RBtiPAk\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"ca3-d56fbe2627de43eda7400fb40701db14\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"v=spf1 include:_spf.google.com include:amazonses.com include:mg-spf.greenhouse.io a:b.spf.service-now.com a:c.spf.service-now.com a:d.spf.service-now.com ip4:54.201.189.228/32 ip4:34.213.31.244/32 ip4:192.91.144.4/32 ip4:35.81.60.45/32 ~all\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"identrust_validate=mhJ8NRUUCvCrypWr5w4+O/fD0j+94q87w7k5z9veVeMW\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"_ijha7u8lqqd7no3deio019v1dsn5fx2\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"canva-site-verification=Bj1hfs61M2vPMeLH56COng\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"onetrust-domain-verification=2e6a8bb11c0c4a4f937f2fd4865d9a06\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=GCSpSUb6s01GUYAnQ_v-dB_mXsTpRWItNcyka7uvNNQ\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"457834d264cebe7597f618a18d896673cd5b3159ce554f20f25f891aeaf5a004\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=qV8g07yNil4NpM2-BlOlQ9NAgUzcpRBOkCFKK70z2_Q\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"docusign=e9f262b4-e53f-48d3-82a9-9b96fcaf03d4\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"notion_verify_ujxP}?}?kbA=yqZ!~MXFh)9zy_>gUYA%g=G8Ca.Qu1)qJRbhY1BDAD3vft8E9WQPHY1y^U\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"lucidchart-verification=B8EssVILyc0awCuwnnDb\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"apple-domain-verification=POUgOkuf9Zh9baPefObB3zLxmZ1T6uDmIdXCFeeiVmg\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"apple-domain-verification=_5MKk6Ejd-2bo9201VsSLE_5Dt5xjiUI9iAB2uFeMz8\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"v=DKIM1; r=postmaster; g=*; k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNAD CBiQKBgQC9ftWTutoRGKLbOq6/Vt51tsa1URAMxZ9jZX7hHt9iRT2cnA l855g5PEPkkgi6nkaRss3SbcxaghHbC9j/RLJwOqU0JmDHA7QAU8uOufavRioeAL 8qnCpurKJGHmmhDyuAuADwpi5yhTtmGcmuMLFiuXGi6MM4SVP7AI5lmu9tcQIDAQAB\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"identrust_validate=/lLqDN5T3Na9VGiUOdggi2Cok5zYtq1sGrEsMnUUjrtJ\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"shopify-verification-code=GfA0teOnhOiv7QcFTAJ4RFtC7daAb2\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=OfCoQg7AqGdku5dt4vpQSfQsbtxeRahlpYOtISlfcWA\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"identrust_validate=CyRLwqA8kjd2WatKEZUjAKDmqWTSzW05ozadW6GJXDeh\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"DirectFedAuthUrl=https://riotgames-sandbox.okta.com/app/riotgames-sandbox_hypixelstudiosentra_1/exkl74dx5tCJ89kzP4x7/sso/saml\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"apple-domain-verification=Ehosrf0ND0Itl9wZ\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=CCrSxqLO1zaClSSKjK9ilfl9_P2Er9UkXXHKZDA_CHs\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"meshy-verification=019dd0db8e53740fa26a005dd74cd98c\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"onetrust-domain-verification=b9a7e3440aaa4df8b127b83bf47588bb\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"MS=ms91738445\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"adobe-idp-site-verification=96d0f402-731e-4b17-8753-5bf1eab53a09\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"066f13297b72659e8cf406dbb219b8294843ec62d70cf05ea47d2cc04690fda7\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"_w88ahe8n1mml0omi55mi6gkwtk83246\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"identrust_validate=qDJurXLwB3tlxm/a2W4BwxovVSZgA8aPPQt5yfT3Y4ht\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"docusign=c0a1e9d2-55bf-45d1-ae3e-9efa7100a9b0\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"146445523-2294647\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"intersight=5da0630aaf98376388b4bdf082a70083dbaf3f3f364702ecf2b2d8c5935dcfbf\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"dtm-domain-verification=Nm6DFQbzn_M9bXrTIs53LrbWZpRV4nwUEDG8Qol5lxU\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"remarkable-domain-verification=716169bb-8517-4201-bd34-28c2c31dd5f4\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"logmein-verification-code=ac9349e4-919b-4e07-a02f-7ed5ec8be131\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"identrust_validate=A/KXuCOOxVb8uS+xpRkdiBVbbnCQRyc06jBTdzLUJ/Jw\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"favro-verification=JD0U5XYpcNCKudb_2oQxaQ-fuMeZYUyd51nHzBQT_qf\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"gc-ai-domain-verification-hfc89f=8xTqWIkmuyeXQpZc4SvBMEAcN\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=8fg37Yi-taZOEbuKtdDT286B2Wj_rVvGQG8CETJAVlk\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"uber-domain-verification=67614d05-9e0d-424b-b1dd-129cb765d17c\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"asv=cf37a1f4f456dcd6a07aff3c278360ca\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"formstack-domain-verification=518ba11334215849a0a9c0645868a591\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=Cs9yB0_7wFp5NnWHYBNf_1jPuiAntar5RANK1SpVyd4\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"atlassian-domain-verification=EuNCf8TNrJZOWDRDqShbqYTpSZKJ/xEV4aTiUKuuNLRrPRgIpv7UbsWAmPLqqJo6\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"tiktok-developers-site-verification=A6bR8PziXGznE91ZeGO9oZG5JPtkTyOO\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"dropbox-domain-verification=cvasafx727yc\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"miro-verification=693886223ed777abd1136fe266c78559e81b02a2\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"elevenlabs=Nj5m-Bg3nfwLgemRUaEZ4TwEfHvJwQZwppU94Qj9tIo\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"extensis-domain-verification=72e1c1d8-2e06-4722-904c-d4e6e29d7a78\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"amazonses:BFF3JQ9GxqcKB7EYv01+RdBSJYa2WyT4+NKRCACI4UA=\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"docusign=d601c9c5-8a5d-469f-b454-8ef472d4dcda\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"google-site-verification=T_qJAAvNM0t9zUwipQXj-9k-Q1CWC7Wz8HKNR4J_e8Q\"",
-            "ttl": 600,
-            "attributes": {}
-        },
-        {
-            "type": "TXT",
-            "name": "riotgames.com",
-            "value": "\"smartsheet-site-validation=3A0R2HoC52iiG-tgEVKicsPBn2xj_0wx\"",
-            "ttl": 600,
+            "name": "example.com",
+            "value": "\"v=spf1 -all\"",
+            "ttl": 300,
             "attributes": {}
         },
         {
             "type": "SOA",
-            "name": "riotgames.com",
-            "value": "dns1.p01.nsone.net",
-            "ttl": 60,
+            "name": "example.com",
+            "value": "elliott.ns.cloudflare.com",
+            "ttl": 1575,
             "attributes": {
-                "rname": "hostmaster.riotgames.com",
-                "serial": 1781642053,
-                "refresh": 3600,
-                "retry": 3600,
-                "expire": 3600,
-                "minimum": 60
+                "rname": "dns.cloudflare.com",
+                "serial": 2411783310,
+                "refresh": 10000,
+                "retry": 2400,
+                "expire": 604800,
+                "minimum": 1800
             }
         },
         {
             "type": "A",
-            "name": "alt1.aspmx.l.google.com",
-            "value": "173.194.41.27",
-            "ttl": 176,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "alt1.aspmx.l.google.com",
-            "value": "2404:6800:4001:c01::1b",
-            "ttl": 293,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "alt2.aspmx.l.google.com",
-            "value": "172.253.158.26",
-            "ttl": 102,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "alt2.aspmx.l.google.com",
-            "value": "2404:6800:4003:c26::1b",
-            "ttl": 12,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "aspmx.l.google.com",
-            "value": "192.178.211.27",
-            "ttl": 293,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "aspmx.l.google.com",
-            "value": "2404:6800:4000:1025::1b",
-            "ttl": 282,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "aspmx2.googlemail.com",
-            "value": "173.194.41.27",
-            "ttl": 293,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "aspmx2.googlemail.com",
-            "value": "2404:6800:4001:c01::1b",
-            "ttl": 293,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "aspmx3.googlemail.com",
-            "value": "172.253.158.27",
-            "ttl": 293,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "aspmx3.googlemail.com",
-            "value": "2404:6800:4003:c26::1a",
-            "ttl": 293,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "dns1.p04.nsone.net",
-            "value": "198.51.44.4",
-            "ttl": 6356,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "dns1.p04.nsone.net",
-            "value": "2620:4d:4000:6259:7:4:0:1",
-            "ttl": 16514,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "dns2.p04.nsone.net",
-            "value": "198.51.45.4",
-            "ttl": 17592,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "dns2.p04.nsone.net",
-            "value": "2a00:edc0:6259:7:4::2",
-            "ttl": 21021,
-            "attributes": {}
-        },
-        {
-            "type": "A",
-            "name": "dns3.p04.nsone.net",
-            "value": "198.51.44.68",
-            "ttl": 19205,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "dns3.p04.nsone.net",
-            "value": "2620:4d:4000:6259:7:4:0:3",
+            "name": "elliott.ns.cloudflare.com",
+            "value": "108.162.195.228",
             "ttl": 21600,
             "attributes": {}
         },
         {
             "type": "A",
-            "name": "dns4.p04.nsone.net",
-            "value": "198.51.45.68",
-            "ttl": 21281,
-            "attributes": {}
-        },
-        {
-            "type": "AAAA",
-            "name": "dns4.p04.nsone.net",
-            "value": "2a00:edc0:6259:7:4::4",
+            "name": "elliott.ns.cloudflare.com",
+            "value": "172.64.35.228",
             "ttl": 21600,
             "attributes": {}
         },
         {
             "type": "A",
-            "name": "ns01.riotdns.com",
-            "value": "45.54.58.1",
-            "ttl": 3600,
+            "name": "elliott.ns.cloudflare.com",
+            "value": "162.159.44.228",
+            "ttl": 21600,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "elliott.ns.cloudflare.com",
+            "value": "2803:f800:50::6ca2:c3e4",
+            "ttl": 21600,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "elliott.ns.cloudflare.com",
+            "value": "2a06:98c1:50::ac40:23e4",
+            "ttl": 21600,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "elliott.ns.cloudflare.com",
+            "value": "2606:4700:58::a29f:2ce4",
+            "ttl": 21600,
             "attributes": {}
         },
         {
             "type": "A",
-            "name": "ns02.riotdns.com",
-            "value": "45.54.58.65",
-            "ttl": 3600,
+            "name": "hera.ns.cloudflare.com",
+            "value": "173.245.58.162",
+            "ttl": 20125,
             "attributes": {}
         },
         {
             "type": "A",
-            "name": "ns03.riotdns.com",
-            "value": "45.54.58.129",
-            "ttl": 3600,
+            "name": "hera.ns.cloudflare.com",
+            "value": "172.64.32.162",
+            "ttl": 20125,
             "attributes": {}
         },
         {
             "type": "A",
-            "name": "ns04.riotdns.com",
-            "value": "45.54.58.193",
-            "ttl": 3600,
+            "name": "hera.ns.cloudflare.com",
+            "value": "108.162.192.162",
+            "ttl": 20125,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "hera.ns.cloudflare.com",
+            "value": "2803:f800:50::6ca2:c0a2",
+            "ttl": 21600,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "hera.ns.cloudflare.com",
+            "value": "2a06:98c1:50::ac40:20a2",
+            "ttl": 21600,
+            "attributes": {}
+        },
+        {
+            "type": "AAAA",
+            "name": "hera.ns.cloudflare.com",
+            "value": "2606:4700:50::adf5:3aa2",
+            "ttl": 21600,
             "attributes": {}
         }
     ],
     "related_entities": [
         {
             "entity_type": "ip",
-            "value": "23.212.50.157",
+            "value": "172.66.147.243",
             "relationship": "resolves_to",
             "source_record": "A"
         },
         {
             "entity_type": "ip",
-            "value": "23.212.50.155",
+            "value": "104.20.23.154",
             "relationship": "resolves_to",
             "source_record": "A"
         },
         {
-            "entity_type": "mail_server",
-            "value": "alt1.aspmx.l.google.com",
-            "relationship": "mail_server",
-            "source_record": "MX"
-        },
-        {
-            "entity_type": "mail_server",
-            "value": "aspmx3.googlemail.com",
-            "relationship": "mail_server",
-            "source_record": "MX"
-        },
-        {
-            "entity_type": "mail_server",
-            "value": "aspmx2.googlemail.com",
-            "relationship": "mail_server",
-            "source_record": "MX"
-        },
-        {
-            "entity_type": "mail_server",
-            "value": "aspmx.l.google.com",
-            "relationship": "mail_server",
-            "source_record": "MX"
-        },
-        {
-            "entity_type": "mail_server",
-            "value": "alt2.aspmx.l.google.com",
-            "relationship": "mail_server",
-            "source_record": "MX"
+            "entity_type": "ip",
+            "value": "2606:4700:8d95:72db:f2ca:0:ef6b:ff98",
+            "relationship": "resolves_to",
+            "source_record": "AAAA"
         },
         {
             "entity_type": "nameserver",
-            "value": "dns4.p04.nsone.net",
+            "value": "elliott.ns.cloudflare.com",
             "relationship": "authoritative_nameserver",
             "source_record": "NS"
         },
         {
             "entity_type": "nameserver",
-            "value": "dns2.p04.nsone.net",
-            "relationship": "authoritative_nameserver",
-            "source_record": "NS"
-        },
-        {
-            "entity_type": "nameserver",
-            "value": "dns1.p04.nsone.net",
-            "relationship": "authoritative_nameserver",
-            "source_record": "NS"
-        },
-        {
-            "entity_type": "nameserver",
-            "value": "ns04.riotdns.com",
-            "relationship": "authoritative_nameserver",
-            "source_record": "NS"
-        },
-        {
-            "entity_type": "nameserver",
-            "value": "ns02.riotdns.com",
-            "relationship": "authoritative_nameserver",
-            "source_record": "NS"
-        },
-        {
-            "entity_type": "nameserver",
-            "value": "ns03.riotdns.com",
-            "relationship": "authoritative_nameserver",
-            "source_record": "NS"
-        },
-        {
-            "entity_type": "nameserver",
-            "value": "dns3.p04.nsone.net",
-            "relationship": "authoritative_nameserver",
-            "source_record": "NS"
-        },
-        {
-            "entity_type": "nameserver",
-            "value": "ns01.riotdns.com",
+            "value": "hera.ns.cloudflare.com",
             "relationship": "authoritative_nameserver",
             "source_record": "NS"
         },
         {
             "entity_type": "ip",
-            "value": "173.194.41.27",
+            "value": "108.162.195.228",
             "relationship": "related_host_resolves_to",
             "source_record": "A"
         },
         {
             "entity_type": "ip",
-            "value": "2404:6800:4001:c01::1b",
+            "value": "172.64.35.228",
+            "relationship": "related_host_resolves_to",
+            "source_record": "A"
+        },
+        {
+            "entity_type": "ip",
+            "value": "162.159.44.228",
+            "relationship": "related_host_resolves_to",
+            "source_record": "A"
+        },
+        {
+            "entity_type": "ip",
+            "value": "2803:f800:50::6ca2:c3e4",
             "relationship": "related_host_resolves_to",
             "source_record": "AAAA"
         },
         {
             "entity_type": "ip",
-            "value": "172.253.158.26",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2404:6800:4003:c26::1b",
+            "value": "2a06:98c1:50::ac40:23e4",
             "relationship": "related_host_resolves_to",
             "source_record": "AAAA"
         },
         {
             "entity_type": "ip",
-            "value": "192.178.211.27",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2404:6800:4000:1025::1b",
+            "value": "2606:4700:58::a29f:2ce4",
             "relationship": "related_host_resolves_to",
             "source_record": "AAAA"
         },
         {
             "entity_type": "ip",
-            "value": "173.194.41.27",
+            "value": "173.245.58.162",
             "relationship": "related_host_resolves_to",
             "source_record": "A"
         },
         {
             "entity_type": "ip",
-            "value": "2404:6800:4001:c01::1b",
+            "value": "172.64.32.162",
+            "relationship": "related_host_resolves_to",
+            "source_record": "A"
+        },
+        {
+            "entity_type": "ip",
+            "value": "108.162.192.162",
+            "relationship": "related_host_resolves_to",
+            "source_record": "A"
+        },
+        {
+            "entity_type": "ip",
+            "value": "2803:f800:50::6ca2:c0a2",
             "relationship": "related_host_resolves_to",
             "source_record": "AAAA"
         },
         {
             "entity_type": "ip",
-            "value": "172.253.158.27",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2404:6800:4003:c26::1a",
+            "value": "2a06:98c1:50::ac40:20a2",
             "relationship": "related_host_resolves_to",
             "source_record": "AAAA"
         },
         {
             "entity_type": "ip",
-            "value": "198.51.44.4",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2620:4d:4000:6259:7:4:0:1",
+            "value": "2606:4700:50::adf5:3aa2",
             "relationship": "related_host_resolves_to",
             "source_record": "AAAA"
-        },
-        {
-            "entity_type": "ip",
-            "value": "198.51.45.4",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2a00:edc0:6259:7:4::2",
-            "relationship": "related_host_resolves_to",
-            "source_record": "AAAA"
-        },
-        {
-            "entity_type": "ip",
-            "value": "198.51.44.68",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2620:4d:4000:6259:7:4:0:3",
-            "relationship": "related_host_resolves_to",
-            "source_record": "AAAA"
-        },
-        {
-            "entity_type": "ip",
-            "value": "198.51.45.68",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "2a00:edc0:6259:7:4::4",
-            "relationship": "related_host_resolves_to",
-            "source_record": "AAAA"
-        },
-        {
-            "entity_type": "ip",
-            "value": "45.54.58.1",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "45.54.58.65",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "45.54.58.129",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
-        },
-        {
-            "entity_type": "ip",
-            "value": "45.54.58.193",
-            "relationship": "related_host_resolves_to",
-            "source_record": "A"
         }
     ],
     "queries": [
         {
             "query_type": "A",
             "resolver": "8.8.8.8",
-            "duration_ms": 54.20769998454489,
+            "duration_ms": 141.124799993122,
             "status": "success"
         },
         {
             "query_type": "AAAA",
             "resolver": "8.8.8.8",
-            "duration_ms": 99.92089998559095,
-            "status": "no_answer"
+            "duration_ms": 32.427300000563264,
+            "status": "success"
         },
         {
             "query_type": "CNAME",
             "resolver": "8.8.8.8",
-            "duration_ms": 38.74879999784753,
+            "duration_ms": 168.187700008275,
             "status": "no_answer"
         },
         {
             "query_type": "MX",
             "resolver": "8.8.8.8",
-            "duration_ms": 43.77809999277815,
+            "duration_ms": 3121.4491999999154,
             "status": "success"
         },
         {
             "query_type": "NS",
             "resolver": "8.8.8.8",
-            "duration_ms": 36.021400010213256,
+            "duration_ms": 70.88220000150613,
             "status": "success"
         },
         {
             "query_type": "TXT",
             "resolver": "8.8.8.8",
-            "duration_ms": 131.50799999129958,
+            "duration_ms": 141.57730000442825,
             "status": "success"
         },
         {
             "query_type": "SOA",
             "resolver": "8.8.8.8",
-            "duration_ms": 38.738900009775534,
+            "duration_ms": 31.529500003671274,
             "status": "success"
         },
         {
             "query_type": "CAA",
             "resolver": "8.8.8.8",
-            "duration_ms": 44.872600003145635,
+            "duration_ms": 193.41450001229532,
             "status": "no_answer"
         },
         {
-            "query_type": "alt1.aspmx.l.google.com A",
+            "query_type": "elliott.ns.cloudflare.com A",
             "resolver": "8.8.8.8",
-            "duration_ms": 34.056999982567504,
+            "duration_ms": 101.90749997855164,
             "status": "success"
         },
         {
-            "query_type": "alt1.aspmx.l.google.com AAAA",
+            "query_type": "elliott.ns.cloudflare.com AAAA",
             "resolver": "8.8.8.8",
-            "duration_ms": 32.665500009898096,
+            "duration_ms": 77.01580002321862,
             "status": "success"
         },
         {
-            "query_type": "alt2.aspmx.l.google.com A",
+            "query_type": "hera.ns.cloudflare.com A",
             "resolver": "8.8.8.8",
-            "duration_ms": 38.110499997856095,
+            "duration_ms": 27.668399998219684,
             "status": "success"
         },
         {
-            "query_type": "alt2.aspmx.l.google.com AAAA",
+            "query_type": "hera.ns.cloudflare.com AAAA",
             "resolver": "8.8.8.8",
-            "duration_ms": 39.78120000101626,
+            "duration_ms": 65.37500000558794,
             "status": "success"
-        },
-        {
-            "query_type": "aspmx.l.google.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 44.58759998669848,
-            "status": "success"
-        },
-        {
-            "query_type": "aspmx.l.google.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 39.629200007766485,
-            "status": "success"
-        },
-        {
-            "query_type": "aspmx2.googlemail.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 36.711900000227615,
-            "status": "success"
-        },
-        {
-            "query_type": "aspmx2.googlemail.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 35.061300004599616,
-            "status": "success"
-        },
-        {
-            "query_type": "aspmx3.googlemail.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 35.42840000591241,
-            "status": "success"
-        },
-        {
-            "query_type": "aspmx3.googlemail.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 40.444100013701245,
-            "status": "success"
-        },
-        {
-            "query_type": "dns1.p04.nsone.net A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 32.25119999842718,
-            "status": "success"
-        },
-        {
-            "query_type": "dns1.p04.nsone.net AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 35.068800003500655,
-            "status": "success"
-        },
-        {
-            "query_type": "dns2.p04.nsone.net A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 30.246500013163313,
-            "status": "success"
-        },
-        {
-            "query_type": "dns2.p04.nsone.net AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 39.438200008589774,
-            "status": "success"
-        },
-        {
-            "query_type": "dns3.p04.nsone.net A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 36.654099996667355,
-            "status": "success"
-        },
-        {
-            "query_type": "dns3.p04.nsone.net AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 44.629500014707446,
-            "status": "success"
-        },
-        {
-            "query_type": "dns4.p04.nsone.net A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 3147.3644000070635,
-            "status": "success"
-        },
-        {
-            "query_type": "dns4.p04.nsone.net AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 50.25110000860877,
-            "status": "success"
-        },
-        {
-            "query_type": "ns01.riotdns.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 34.27720000036061,
-            "status": "success"
-        },
-        {
-            "query_type": "ns01.riotdns.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 36.78200001013465,
-            "status": "no_answer"
-        },
-        {
-            "query_type": "ns02.riotdns.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 36.12299999804236,
-            "status": "success"
-        },
-        {
-            "query_type": "ns02.riotdns.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 170.7876999862492,
-            "status": "no_answer"
-        },
-        {
-            "query_type": "ns03.riotdns.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 40.6502999830991,
-            "status": "success"
-        },
-        {
-            "query_type": "ns03.riotdns.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 41.04390001157299,
-            "status": "no_answer"
-        },
-        {
-            "query_type": "ns04.riotdns.com A",
-            "resolver": "8.8.8.8",
-            "duration_ms": 119.87809999845922,
-            "status": "success"
-        },
-        {
-            "query_type": "ns04.riotdns.com AAAA",
-            "resolver": "8.8.8.8",
-            "duration_ms": 31.994900025893003,
-            "status": "no_answer"
         }
     ],
-    "errors": []
+    "errors": [],
+    "dnssec_signed": null
 }

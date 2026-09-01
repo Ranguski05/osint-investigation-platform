@@ -15,6 +15,8 @@ Low-level DNS operations are handled by DNSResolver.
 
 from __future__ import annotations
 
+import logging
+
 from .exceptions import InvalidTargetError
 from .models import (
     CollectionError,
@@ -33,6 +35,8 @@ from .utils import (
     normalize_dns_name,
     utc_now_iso,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DNSCollector:
@@ -108,6 +112,11 @@ class DNSCollector:
                 "related_resolution_depth cannot be negative."
             )
 
+        if self.config.max_related_hosts < 0:
+            raise ValueError(
+                "max_related_hosts cannot be negative."
+            )
+
         self.resolver = DNSResolver(
             nameservers=self.config.nameservers,
             timeout=self.config.timeout,
@@ -145,17 +154,27 @@ class DNSCollector:
             )
 
         except InvalidTargetError as exc:
+            logger.warning(
+                "Rejected invalid DNS target: %r (%s)",
+                target_value,
+                exc,
+            )
             return self._create_failed_collection(
                 target_value=target_value,
                 observed_at=observed_at,
                 error=exc,
             )
 
+        logger.info(
+            "Starting DNS collection for %s (%s)",
+            target.value,
+            target.type.value,
+        )
+
         collection = DNSCollection(
             target=target,
             observed_at=observed_at,
             collector=CollectorInfo(
-                name="dns",
                 version=self.VERSION,
             ),
             status=CollectionStatus.SUCCESS,
@@ -173,6 +192,14 @@ class DNSCollector:
 
         self._calculate_status(
             collection
+        )
+
+        logger.info(
+            "Completed DNS collection for %s: status=%s records=%d errors=%d",
+            target.value,
+            collection.status.value,
+            len(collection.records),
+            len(collection.errors),
         )
 
         return collection
@@ -220,6 +247,16 @@ class DNSCollector:
             and self.config.related_resolution_depth > 0
         ):
             self._resolve_related_hosts(
+                collection
+            )
+
+        if self.config.include_dnssec:
+            self._collect_dnssec(
+                collection
+            )
+
+        if self.config.resolve_ptr_for_discovered_ips:
+            self._resolve_ptr_for_discovered_ips(
                 collection
             )
 
@@ -320,7 +357,23 @@ class DNSCollector:
                 hostname
             )
 
-        for hostname in sorted(hostnames):
+        sorted_hostnames = sorted(hostnames)
+
+        bounded_hostnames = sorted_hostnames[
+            : self.config.max_related_hosts
+        ]
+
+        if len(sorted_hostnames) > len(bounded_hostnames):
+            logger.warning(
+                "%s referenced %d related hostnames; "
+                "resolving only the first %d "
+                "(see DNSCollectorConfig.max_related_hosts).",
+                collection.target.value,
+                len(sorted_hostnames),
+                len(bounded_hostnames),
+            )
+
+        for hostname in bounded_hostnames:
 
             self._resolve_related_hostname(
                 collection=collection,
@@ -370,6 +423,121 @@ class DNSCollector:
                             "related_host_resolves_to"
                         ),
                         source_record=record_type,
+                    )
+                )
+
+            self._append_query_error(
+                collection=collection,
+                query_type=query_type,
+                result=result,
+            )
+
+    def _collect_dnssec(
+        self,
+        collection: DNSCollection,
+    ) -> None:
+        """
+        Optionally collect DNSKEY and DS records for the target and
+        derive a simple signed/unsigned status.
+
+        This is a presence check, not cryptographic validation: it does
+        not verify signatures or a chain of trust, only whether the zone
+        publishes DNSKEY records at all. Full DNSSEC validation would be
+        a materially larger undertaking and is out of scope here.
+        """
+
+        target = collection.target.value
+        dnskey_found = False
+
+        for record_type in ("DNSKEY", "DS"):
+
+            result = self.resolver.query(
+                name=target,
+                record_type=record_type,
+            )
+
+            self._append_query_metadata(
+                collection=collection,
+                query_type=record_type,
+                result=result,
+            )
+
+            if result.records:
+                collection.records.extend(
+                    result.records
+                )
+
+                if record_type == "DNSKEY":
+                    dnskey_found = True
+
+            self._append_query_error(
+                collection=collection,
+                query_type=record_type,
+                result=result,
+            )
+
+        collection.dnssec_signed = dnskey_found
+
+    def _resolve_ptr_for_discovered_ips(
+        self,
+        collection: DNSCollection,
+    ) -> None:
+        """
+        Optionally reverse-resolve IPs discovered via A/AAAA records.
+
+        Bounded by max_related_hosts for the same reason related-host
+        resolution is bounded: this is an additional round of queries
+        the caller must opt into, not something that scales unbounded
+        with however many A/AAAA records were collected.
+        """
+
+        discovered_ips = sorted(
+            {
+                entity.value
+                for entity in collection.related_entities
+                if entity.entity_type == "ip"
+            }
+        )
+
+        bounded_ips = discovered_ips[
+            : self.config.max_related_hosts
+        ]
+
+        if len(discovered_ips) > len(bounded_ips):
+            logger.warning(
+                "%s resolved %d IPs; reverse-resolving only the "
+                "first %d (see DNSCollectorConfig.max_related_hosts).",
+                collection.target.value,
+                len(discovered_ips),
+                len(bounded_ips),
+            )
+
+        for ip in bounded_ips:
+
+            result = self.resolver.reverse_lookup(
+                ip
+            )
+
+            query_type = f"{ip} PTR"
+
+            self._append_query_metadata(
+                collection=collection,
+                query_type=query_type,
+                result=result,
+            )
+
+            for record in result.records:
+
+                collection.records.append(
+                    record
+                )
+
+                collection.related_entities.append(
+                    EntityRelationship(
+                        entity_type="hostname",
+                        value=record.value,
+                        relationship="reverse_resolves_to",
+                        source_record="PTR",
                     )
                 )
 
@@ -519,7 +687,6 @@ class DNSCollector:
             target=fallback_target,
             observed_at=observed_at,
             collector=CollectorInfo(
-                name="dns",
                 version=self.VERSION,
             ),
             status=CollectionStatus.FAILED,

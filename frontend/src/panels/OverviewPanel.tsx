@@ -48,6 +48,12 @@ export function OverviewPanel({ collection }: OverviewPanelProps) {
           <dt>Errors</dt>
           <dd>{collection.errors.length}</dd>
         </div>
+        {collection.dnssec_signed !== null && (
+          <div className="kv-row">
+            <dt>DNSSEC</dt>
+            <dd>{collection.dnssec_signed ? "Signed" : "Not signed"}</dd>
+          </div>
+        )}
       </dl>
 
       {collection.errors.length > 0 && (

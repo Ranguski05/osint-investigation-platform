@@ -84,6 +84,35 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--max-related-hosts",
+        type=int,
+        default=10,
+        metavar="N",
+        help=(
+            "Maximum number of related hostnames to resolve "
+            "(default: 10)."
+        ),
+    )
+
+    parser.add_argument(
+        "--include-dnssec",
+        action="store_true",
+        help=(
+            "Also collect DNSKEY/DS records and report whether "
+            "the zone appears signed."
+        ),
+    )
+
+    parser.add_argument(
+        "--resolve-ptr-for-discovered-ips",
+        action="store_true",
+        help=(
+            "Also attempt PTR lookups for IPs discovered via "
+            "A/AAAA records, bounded by --max-related-hosts."
+        ),
+    )
+
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose/debug logging.",
@@ -139,12 +168,22 @@ def main() -> int:
             "--lifetime must be greater than zero."
         )
 
+    if args.max_related_hosts < 0:
+        parser.error(
+            "--max-related-hosts cannot be negative."
+        )
+
     config = DNSCollectorConfig(
         nameservers=args.nameservers,
         timeout=args.timeout,
         lifetime=args.lifetime,
         resolve_related_hosts=(
             not args.no_related
+        ),
+        max_related_hosts=args.max_related_hosts,
+        include_dnssec=args.include_dnssec,
+        resolve_ptr_for_discovered_ips=(
+            args.resolve_ptr_for_discovered_ips
         ),
     )
 
