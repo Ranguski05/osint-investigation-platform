@@ -22,9 +22,16 @@ interface InvestigationGraphProps {
   resetToken: number;
 }
 
-/** Force-graph nodes/links carry extra runtime fields (x, y, z, fx, fy, fz, ...); this is a practical typing. */
-type FgNode = GraphNode & { x?: number; y?: number; z?: number; fx?: number; fy?: number; fz?: number };
-type FgLink = Omit<GraphEdge, "source" | "target"> & {
+/**
+ * Force-graph nodes/links carry extra runtime fields (x, y, z, fx, fy, fz,
+ * ...); this is a practical typing. All coordinate fields are optional, so
+ * this same type also covers 2D nodes/links (which never populate z/fz) --
+ * see InvestigationGraph2D.tsx, which imports this type and several of the
+ * pure helpers below rather than re-implementing identical dimming/tooltip
+ * logic for the second representation.
+ */
+export type FgNode = GraphNode & { x?: number; y?: number; z?: number; fx?: number; fy?: number; fz?: number };
+export type FgLink = Omit<GraphEdge, "source" | "target"> & {
   source: string | FgNode;
   target: string | FgNode;
 };
@@ -193,7 +200,7 @@ export function InvestigationGraph({
   );
 }
 
-function connectedTo(nodeId: string | null, edges: GraphEdge[]): Set<string> {
+export function connectedTo(nodeId: string | null, edges: GraphEdge[]): Set<string> {
   const ids = new Set<string>();
   if (!nodeId) return ids;
   ids.add(nodeId);
@@ -204,31 +211,31 @@ function connectedTo(nodeId: string | null, edges: GraphEdge[]): Set<string> {
   return ids;
 }
 
-function nodeColor(node: FgNode, focusId: string | null, connected: Set<string>): string {
+export function nodeColor(node: FgNode, focusId: string | null, connected: Set<string>): string {
   const base = styleFor(node.kind).color;
   if (!focusId) return base;
   return connected.has(node.id) ? base : dim(base);
 }
 
-function isLinkActive(link: FgLink, focusId: string | null): boolean {
+export function isLinkActive(link: FgLink, focusId: string | null): boolean {
   if (!focusId) return false;
   const sourceId = typeof link.source === "string" ? link.source : link.source.id;
   const targetId = typeof link.target === "string" ? link.target : link.target.id;
   return sourceId === focusId || targetId === focusId;
 }
 
-function linkColor(link: FgLink, focusId: string | null): string {
+export function linkColor(link: FgLink, focusId: string | null): string {
   return isLinkActive(link, focusId) ? "#e8edf5" : "#3a4152";
 }
 
-function dim(hex: string): string {
+export function dim(hex: string): string {
   // Fade a color toward the background for de-emphasized nodes.
   const color = new THREE.Color(hex);
   color.lerp(new THREE.Color("#05070c"), 0.75);
   return `#${color.getHexString()}`;
 }
 
-function nodeTooltip(node: FgNode): string {
+export function nodeTooltip(node: FgNode): string {
   const kindLabel = styleFor(node.kind).label;
   return `${kindLabel}\n${node.label}`;
 }

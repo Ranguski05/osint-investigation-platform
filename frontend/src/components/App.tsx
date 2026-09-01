@@ -7,6 +7,8 @@ import { mergeGraphs } from "../data/mergeGraphs";
 import type { DnsCollection } from "../types/dns";
 import type { SubdomainCollection } from "../types/subdomains";
 import { InvestigationGraph } from "./graph/InvestigationGraph";
+import { InvestigationGraph2D } from "./graph/InvestigationGraph2D";
+import { GraphViewToggle, type GraphViewMode } from "./graph/GraphViewToggle";
 import { TargetSearch } from "./TargetSearch";
 import { StatusView } from "./StatusView";
 import { InvestigationBanner } from "./InvestigationBanner";
@@ -222,12 +224,32 @@ function DashboardBody({
 }: DashboardBodyProps) {
   // Recomputed only when either source collection changes, not on every
   // hover/select. dnsToGraph/subdomainsToGraph/mergeGraphs are pure and
-  // collector-agnostic -- neither knows the other collector exists.
+  // collector-agnostic -- neither knows the other collector exists. Both
+  // the 2D and 3D representations render this exact same merged graph
+  // (see InvestigationGraph.tsx / InvestigationGraph2D.tsx) -- the toggle
+  // below only changes which one is mounted, never what data either sees.
   const graph = useMemo(() => {
     const dnsGraph = dnsToGraph(collection);
     if (!subdomainCollection) return dnsGraph;
     return mergeGraphs([dnsGraph, subdomainsToGraph(subdomainCollection)]);
   }, [collection, subdomainCollection]);
+
+  // Local to the dashboard body (not lifted to App) since it's a pure view
+  // preference, not investigation state -- it deliberately does NOT reset
+  // on a new search, unlike selectedNodeId/resetToken above.
+  const [viewMode, setViewMode] = useState<GraphViewMode>("3d");
+
+  const handleViewModeChange = useCallback(
+    (mode: GraphViewMode) => {
+      setViewMode(mode);
+      // A hover highlight from the previous representation wouldn't
+      // correspond to any real pointer position in the new one -- the
+      // selected node (and Node Inspector) deliberately survive the
+      // switch, only the transient hover state is cleared.
+      onHoverNode(null);
+    },
+    [onHoverNode]
+  );
 
   return (
     <main className="dashboard-body">
@@ -240,15 +262,28 @@ function DashboardBody({
         <div className="graph-controls">
           <button onClick={onResetCamera}>Reset view</button>
         </div>
+        <GraphViewToggle mode={viewMode} onChange={handleViewModeChange} />
         {banner}
-        <InvestigationGraph
-          graph={graph}
-          selectedNodeId={selectedNodeId}
-          hoveredNodeId={hoveredNodeId}
-          onSelectNode={onSelectNode}
-          onHoverNode={onHoverNode}
-          resetToken={resetToken}
-        />
+        {viewMode === "3d" ? (
+          <InvestigationGraph
+            graph={graph}
+            selectedNodeId={selectedNodeId}
+            hoveredNodeId={hoveredNodeId}
+            onSelectNode={onSelectNode}
+            onHoverNode={onHoverNode}
+            resetToken={resetToken}
+          />
+        ) : (
+          <InvestigationGraph2D
+            graph={graph}
+            subdomainCollection={subdomainCollection}
+            selectedNodeId={selectedNodeId}
+            hoveredNodeId={hoveredNodeId}
+            onSelectNode={onSelectNode}
+            onHoverNode={onHoverNode}
+            resetToken={resetToken}
+          />
+        )}
         {selectedNodeId && (
           <NodeInspector graph={graph} selectedNodeId={selectedNodeId} onClose={() => onSelectNode(null)} />
         )}
