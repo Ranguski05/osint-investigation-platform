@@ -1,4 +1,5 @@
 import type { DnsCollection, EntityRelationship } from "../types/dns";
+import { CollapsiblePanel } from "../components/CollapsiblePanel";
 
 interface RelatedEntitiesPanelProps {
   collection: DnsCollection;
@@ -16,9 +17,7 @@ export function RelatedEntitiesPanel({ collection }: RelatedEntitiesPanelProps) 
   const groupKeys = Array.from(grouped.keys());
 
   return (
-    <section className="panel panel-scroll" aria-label="Related entities">
-      <h2 className="panel-title">Related Entities</h2>
-
+    <CollapsiblePanel title="Related Entities" ariaLabel="Related entities" defaultExpanded={false} scroll>
       {groupKeys.length === 0 && <p className="empty-state">No related entities were discovered.</p>}
 
       {groupKeys.map((entityType) => (
@@ -39,7 +38,7 @@ export function RelatedEntitiesPanel({ collection }: RelatedEntitiesPanelProps) 
           </ul>
         </div>
       ))}
-    </section>
+    </CollapsiblePanel>
   );
 }
 

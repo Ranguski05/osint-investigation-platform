@@ -1,4 +1,5 @@
 import type { DnsValidationStatus, SubdomainCollection } from "../types/subdomains";
+import { CollapsiblePanel } from "../components/CollapsiblePanel";
 
 interface SubdomainsPanelProps {
   collection: SubdomainCollection;
@@ -12,11 +13,16 @@ export function SubdomainsPanel({ collection }: SubdomainsPanelProps) {
   const failedSources = collection.sources.filter((source) => source.status === "failed");
 
   return (
-    <section className="panel panel-scroll" aria-label="Discovered subdomains">
-      <h2 className="panel-title">
-        Subdomains <span className="record-count">{collection.candidate_count}</span>
-      </h2>
-
+    <CollapsiblePanel
+      title={
+        <>
+          Subdomains <span className="record-count">{collection.candidate_count}</span>
+        </>
+      }
+      ariaLabel="Discovered subdomains"
+      defaultExpanded={false}
+      scroll
+    >
       {collection.observations.length === 0 && failedSources.length === 0 && (
         <p className="empty-state">No subdomains discovered.</p>
       )}
@@ -41,7 +47,7 @@ export function SubdomainsPanel({ collection }: SubdomainsPanelProps) {
           {failedSources.map((source) => `${source.source}: ${source.message}`).join("; ")}
         </p>
       )}
-    </section>
+    </CollapsiblePanel>
   );
 }
 

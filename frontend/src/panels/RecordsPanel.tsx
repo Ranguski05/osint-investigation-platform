@@ -1,33 +1,83 @@
+import { useState } from "react";
 import type { DnsCollection, DnsRecord } from "../types/dns";
+import { CollapsiblePanel } from "../components/CollapsiblePanel";
 
 interface RecordsPanelProps {
   collection: DnsCollection;
 }
 
 const RECORD_ORDER = ["A", "AAAA", "CNAME", "MX", "NS", "TXT", "SOA", "CAA", "PTR", "DNSKEY", "DS"];
+const ALL_TYPES = "all";
 
 /**
  * Renders every DNS record grouped by type, in a format closer to how an
  * investigator reads a zone than raw JSON -- but every field the collector
  * produced is still shown somewhere here. Nothing is summarized away.
+ *
+ * The type filter and search box only narrow which of those records are
+ * displayed -- they never change what was collected or how it's grouped.
+ * Search matches a record's own displayed value only (not TTL/attributes).
  */
 export function RecordsPanel({ collection }: RecordsPanelProps) {
+  const [selectedType, setSelectedType] = useState(ALL_TYPES);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const grouped = groupByType(collection.records);
   const orderedTypes = [
     ...RECORD_ORDER.filter((type) => grouped.has(type)),
     ...Array.from(grouped.keys()).filter((type) => !RECORD_ORDER.includes(type)),
   ];
 
+  const visibleTypes = selectedType === ALL_TYPES ? orderedTypes : orderedTypes.filter((type) => type === selectedType);
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  const filteredGroups = visibleTypes
+    .map((type) => ({
+      type,
+      records: normalizedSearch
+        ? grouped.get(type)!.filter((record) => record.value.toLowerCase().includes(normalizedSearch))
+        : grouped.get(type)!,
+    }))
+    .filter((group) => group.records.length > 0);
+
   return (
-    <section className="panel panel-scroll" aria-label="DNS records">
-      <h2 className="panel-title">Records</h2>
+    <CollapsiblePanel title="Records" ariaLabel="DNS records" defaultExpanded scroll>
+      {orderedTypes.length === 0 ? (
+        <p className="empty-state">No records were collected.</p>
+      ) : (
+        <>
+          <div className="records-filters">
+            <select
+              className="records-type-select"
+              value={selectedType}
+              onChange={(event) => setSelectedType(event.target.value)}
+              aria-label="Filter by record type"
+            >
+              <option value={ALL_TYPES}>All Records</option>
+              {orderedTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              className="records-search-input"
+              placeholder="Search records..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              aria-label="Search records"
+            />
+          </div>
 
-      {orderedTypes.length === 0 && <p className="empty-state">No records were collected.</p>}
+          {filteredGroups.length === 0 && <p className="empty-state">No records match your filters.</p>}
 
-      {orderedTypes.map((type) => (
-        <RecordGroup key={type} type={type} records={grouped.get(type)!} />
-      ))}
-    </section>
+          {filteredGroups.map(({ type, records }) => (
+            <RecordGroup key={type} type={type} records={records} />
+          ))}
+        </>
+      )}
+    </CollapsiblePanel>
   );
 }
 

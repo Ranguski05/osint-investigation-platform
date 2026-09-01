@@ -223,6 +223,36 @@ body,
   margin: 0 0 12px 0;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex: 1;
+}
+
+/* Wraps .panel-title in a real <button> so the whole header toggles the
+   section -- `all: unset` strips default button chrome, then the
+   properties below restore only what's needed. */
+.panel-header {
+  all: unset;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.panel-header:hover .panel-title {
+  color: var(--text);
+}
+
+.panel-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.panel-toggle {
+  color: var(--text-muted);
+  font-size: 9px;
+  margin-left: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 /* Numeric/metadata fields line up cleanly instead of jittering per-digit width. */
@@ -379,12 +409,35 @@ body,
   border-left-color: var(--accent);
 }
 
-.overview-errors {
-  margin-top: 10px;
+.error-list .record-item {
+  border-left-color: var(--danger);
 }
 
-.overview-errors .record-item {
-  border-left-color: var(--danger);
+/* ---------- Records panel filters ---------- */
+
+.records-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.records-type-select,
+.records-search-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  width: 100%;
+  transition: border-color 150ms ease;
+}
+
+.records-type-select:focus,
+.records-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 /* ---------- Query performance ---------- */

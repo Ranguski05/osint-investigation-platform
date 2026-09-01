@@ -55,17 +55,6 @@ export function OverviewPanel({ collection }: OverviewPanelProps) {
           </div>
         )}
       </dl>
-
-      {collection.errors.length > 0 && (
-        <ul className="record-list overview-errors">
-          {collection.errors.map((error, index) => (
-            <li className="record-item" key={`${error.query_type}-${index}`}>
-              <span className="record-name">{error.query_type ?? "target"} · {error.error_type}</span>
-              <span className="record-value">{error.message}</span>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }

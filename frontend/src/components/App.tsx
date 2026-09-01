@@ -14,6 +14,7 @@ import { OverviewPanel } from "../panels/OverviewPanel";
 import { RecordsPanel } from "../panels/RecordsPanel";
 import { RelatedEntitiesPanel } from "../panels/RelatedEntitiesPanel";
 import { SubdomainsPanel } from "../panels/SubdomainsPanel";
+import { ErrorsPanel } from "../panels/ErrorsPanel";
 import { QueryPerformancePanel } from "../panels/QueryPerformancePanel";
 import { Legend } from "../panels/Legend";
 import { NodeInspector } from "../panels/NodeInspector";
@@ -257,6 +258,7 @@ function DashboardBody({
         <RecordsPanel collection={collection} />
         <RelatedEntitiesPanel collection={collection} />
         {subdomainCollection && <SubdomainsPanel collection={subdomainCollection} />}
+        <ErrorsPanel collection={collection} />
         <Legend />
       </aside>
     </main>
