@@ -172,7 +172,7 @@ class SubdomainCollector:
 
         except SourceError as exc:
             logger.warning("Source %s failed for %s: %s", source.name, domain, exc)
-            self._record_source_failure(collection, source, "SOURCE_ERROR", str(exc))
+            self._record_source_failure(collection, source, exc.error_type, str(exc))
             return
 
         except Exception as exc:  # noqa: BLE001 -- a third-party source must never crash the whole collection

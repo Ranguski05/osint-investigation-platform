@@ -26,8 +26,10 @@ from collectors.dns.models import DNSCollectorConfig
 from collectors.subdomains.collector import SubdomainCollector
 from collectors.subdomains.models import SubdomainCollectorConfig
 from collectors.subdomains.sources.base import SubdomainSource
+from collectors.subdomains.sources.certspotter import CertSpotterSource
 from collectors.subdomains.sources.crtsh import CrtShSource
 from collectors.subdomains.sources.dns_bruteforce import DNSBruteforceSource
+from collectors.subdomains.sources.securitytrails import SecurityTrailsSource
 
 # The default DNS resolver used when a request does not specify one.
 # Configurable per-environment so it is never hardcoded into the collector
@@ -122,6 +124,26 @@ def investigate_subdomains(
         description="Attempt A/AAAA/CNAME resolution for each discovered hostname.",
     ),
     timeout: float = Query(default=5.0, gt=0, description="HTTP request timeout for discovery sources."),
+    enable_certspotter: bool = Query(
+        default=True,
+        description=(
+            "Also discover subdomains via Cert Spotter (a second, "
+            "independent Certificate Transparency source, alongside "
+            "crt.sh). On by default -- like crt.sh, it is passive and "
+            "free, and running both gives more complete coverage and "
+            "resilience if one is unavailable."
+        ),
+    ),
+    enable_securitytrails: bool = Query(
+        default=False,
+        description=(
+            "Also discover subdomains via the SecurityTrails API. Off "
+            "by default, unlike crt.sh/Cert Spotter -- it requires a "
+            "paid/quota-limited API key, configured server-side via the "
+            "OSINT_SECURITYTRAILS_API_KEY environment variable, not "
+            "over this endpoint."
+        ),
+    ),
     enable_bruteforce: bool = Query(
         default=False,
         description=(
@@ -177,6 +199,13 @@ def investigate_subdomains(
     )
 
     sources: list[SubdomainSource] = [CrtShSource()]
+
+    if enable_certspotter:
+        sources.append(CertSpotterSource())
+
+    if enable_securitytrails:
+        sources.append(SecurityTrailsSource())
+
     if enable_bruteforce:
         sources.append(
             DNSBruteforceSource(

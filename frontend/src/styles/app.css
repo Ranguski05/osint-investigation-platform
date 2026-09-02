@@ -127,6 +127,28 @@ body,
   display: grid;
   grid-template-columns: 300px 1fr 320px;
   min-height: 0;
+  /* Track widths are plain lengths (no fr-to-px jump), which is what lets
+     this animate smoothly -- both grid template values below keep three
+     tracks of the same type, only the collapsed one changes. */
+  transition: grid-template-columns 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-body.left-collapsed {
+  grid-template-columns: 0px 1fr 320px;
+}
+
+.dashboard-body.right-collapsed {
+  grid-template-columns: 300px 1fr 0px;
+}
+
+.dashboard-body.left-collapsed.right-collapsed {
+  grid-template-columns: 0px 1fr 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-body {
+    transition: none;
+  }
 }
 
 .dashboard-column {
@@ -136,11 +158,26 @@ body,
   padding: 16px;
   overflow-y: auto;
   border-right: 1px solid var(--panel-border);
+  opacity: 1;
+  transition: opacity 200ms ease, padding 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 320ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dashboard-column-right {
   border-right: none;
   border-left: 1px solid var(--panel-border);
+}
+
+/* The sidebar's own content: once its grid track hits 0 width, padding
+   would otherwise still reserve space and force an unwanted scrollbar --
+   collapsing padding to 0 alongside the width transition avoids that,
+   and fading it out first (opacity, shorter/faster) keeps the collapse
+   from looking like content just got sheared off mid-word. */
+.dashboard-column-collapsed {
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-color: transparent;
 }
 
 .dashboard-graph {
@@ -172,6 +209,101 @@ body,
   height: 100%;
   pointer-events: none;
   z-index: -1;
+}
+
+/*
+ * Independent, near-static rotation layer: a full 360° turn over several
+ * minutes, orders of magnitude slower than any deliberate camera
+ * gesture, so it reads as "a distant planet's own slow rotation" rather
+ * than tracking the investigator's camera. This is the ONLY transform
+ * ever applied to the globe -- it has a fixed apparent size and is never
+ * scaled/repositioned in response to the graph camera's zoom or pan, so
+ * there is nothing here for that camera to fight over.
+ */
+.globe-backdrop-rotator {
+  position: absolute;
+  inset: 0;
+  animation: globe-slow-rotate 280s linear infinite;
+}
+
+@keyframes globe-slow-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globe-backdrop-rotator {
+    animation: none;
+  }
+}
+
+/* ---------- Sidebar edge toggles ---------- */
+
+/*
+ * Mounted at the graph viewport's own left/right edge (see
+ * SidebarEdgeToggle.tsx) rather than on the sidebar itself, so it never
+ * needs to track the sidebar's animated width -- it's always exactly at
+ * the current sidebar/graph boundary, collapsed or not. A thin vertical
+ * tab rather than a boxed dashboard button, to read as an instrument
+ * built into the console edge instead of a generic UI control.
+ */
+.sidebar-edge-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 16px;
+  height: 64px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 15, 24, 0.7);
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.sidebar-edge-toggle-left {
+  left: 0;
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+}
+
+.sidebar-edge-toggle-right {
+  right: 0;
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+}
+
+.sidebar-edge-toggle:hover,
+.sidebar-edge-toggle:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(94, 200, 248, 0.1);
+  box-shadow: 0 0 12px rgba(94, 200, 248, 0.18);
+}
+
+.sidebar-edge-toggle:focus-visible {
+  outline: none;
+}
+
+.sidebar-edge-toggle-chevron {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-edge-toggle {
+    transition: none;
+  }
 }
 
 .graph-controls {

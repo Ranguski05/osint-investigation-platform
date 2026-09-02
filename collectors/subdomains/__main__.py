@@ -16,8 +16,10 @@ import sys
 from .collector import SubdomainCollector
 from .models import SubdomainCollection, SubdomainCollectorConfig
 from .sources.base import SubdomainSource
+from .sources.certspotter import CertSpotterSource
 from .sources.crtsh import CrtShSource
 from .sources.dns_bruteforce import DNSBruteforceSource, parse_wordlist
+from .sources.securitytrails import SecurityTrailsSource
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -115,6 +117,51 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Skip the wildcard-DNS probe performed before "
             "validation."
+        ),
+    )
+
+    parser.add_argument(
+        "--no-certspotter",
+        action="store_true",
+        help=(
+            "Skip the Cert Spotter Certificate Transparency source. "
+            "Enabled by default, like crt.sh -- both are passive and "
+            "free, so running both by default gives more complete "
+            "coverage and resilience if one is unavailable."
+        ),
+    )
+
+    parser.add_argument(
+        "--certspotter-api-key",
+        type=str,
+        metavar="KEY",
+        help=(
+            "Cert Spotter API key, for a higher rate limit than "
+            "anonymous requests. Not required -- Cert Spotter works "
+            "without a key."
+        ),
+    )
+
+    parser.add_argument(
+        "--securitytrails",
+        action="store_true",
+        help=(
+            "Also discover subdomains via the SecurityTrails API. "
+            "Requires an API key (--securitytrails-api-key or the "
+            "OSINT_SECURITYTRAILS_API_KEY environment variable). Off by "
+            "default, unlike crt.sh/Cert Spotter, since it needs a "
+            "paid/quota-limited credential."
+        ),
+    )
+
+    parser.add_argument(
+        "--securitytrails-api-key",
+        type=str,
+        metavar="KEY",
+        help=(
+            "SecurityTrails API key. Falls back to the "
+            "OSINT_SECURITYTRAILS_API_KEY environment variable when not "
+            "given here."
         ),
     )
 
@@ -226,6 +273,12 @@ def main() -> int:
     )
 
     sources: list[SubdomainSource] = [CrtShSource()]
+
+    if not args.no_certspotter:
+        sources.append(CertSpotterSource(api_key=args.certspotter_api_key))
+
+    if args.securitytrails:
+        sources.append(SecurityTrailsSource(api_key=args.securitytrails_api_key))
 
     if args.bruteforce:
         wordlist = None

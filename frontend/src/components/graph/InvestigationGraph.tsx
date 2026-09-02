@@ -123,7 +123,9 @@ export function InvestigationGraph({
 
   return (
     <div ref={containerRef} className="graph-canvas-container">
-      <GlobeBackdrop />
+      <div className="globe-backdrop-rotator">
+        <GlobeBackdrop />
+      </div>
       <ForceGraph3D<FgNode, FgLink>
         ref={fgRef}
         graphData={fgData}

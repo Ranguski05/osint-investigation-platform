@@ -9,15 +9,31 @@
  * confused with real graph content and never intercepts clicks/hover.
  *
  * Deliberately plain 2D SVG rather than a second Three.js scene: it needs
- * to stay fixed regardless of how the graph's camera moves, never affect
- * zoomToFit's bounding-box math, and cost effectively nothing to render.
+ * to never affect zoomToFit's bounding-box math and cost effectively
+ * nothing to render. It has a FIXED apparent size and is never resized or
+ * rescaled in response to the graph camera's zoom/pan -- there is no
+ * camera-coupling to maintain here at all. Rotation is handled entirely
+ * separately (a slow, camera-independent CSS animation on this
+ * component's parent wrapper, `.globe-backdrop-rotator`), which is why
+ * this component itself takes no props.
+ *
+ * `preserveAspectRatio="xMidYMid meet"` (not "slice") is required here:
+ * the render box is the graph pane's own rectangle, which is frequently
+ * non-square (and changes shape sharply when a sidebar collapses/expands).
+ * "slice" would crop the circular globe to cover a non-square box, and
+ * since the whole rectangle then spins via CSS transform, that crop edge
+ * would sweep visibly through the disc as it rotates. "meet" always
+ * renders the complete circle (with its own built-in margin) inside the
+ * box regardless of aspect ratio, and because the circle is concentric
+ * with the rotating wrapper's own center, its boundary never moves under
+ * rotation -- only the meridian/latitude lines inside it spin.
  */
 export function GlobeBackdrop() {
   return (
     <svg
       className="globe-backdrop"
       viewBox="0 0 600 600"
-      preserveAspectRatio="xMidYMid slice"
+      preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
       focusable="false"
     >

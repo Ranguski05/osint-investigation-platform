@@ -17,6 +17,7 @@ import { EntityTypeFilter } from "./graph/EntityTypeFilter";
 import { TargetSearch } from "./TargetSearch";
 import { StatusView } from "./StatusView";
 import { InvestigationBanner } from "./InvestigationBanner";
+import { SidebarEdgeToggle } from "./SidebarEdgeToggle";
 import { OverviewPanel } from "../panels/OverviewPanel";
 import { RecordsPanel } from "../panels/RecordsPanel";
 import { RelatedEntitiesPanel } from "../panels/RelatedEntitiesPanel";
@@ -293,6 +294,17 @@ function DashboardBody({
   // render, rather than each representation tracking its own copy.
   const [entityFilter, setEntityFilter] = useState<EntityFilterValue>("all");
 
+  // Sidebar visibility is a pure layout preference, same category as
+  // viewMode/entityFilter above -- local to the dashboard body, and
+  // deliberately does not reset on a new search. Both start open (the
+  // dashboard's existing default), so a collapse is always something the
+  // investigator does deliberately, not a surprise on first load. Panel
+  // content itself is never unmounted on collapse (see the JSX below) --
+  // only hidden via CSS -- so each CollapsiblePanel's own expand/collapse
+  // state and scroll position survive a sidebar collapse/reopen.
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+
   const entityCounts = useMemo(() => countNodesByKind(graph), [graph]);
 
   // Presentation-only narrowing of the already-merged graph -- see
@@ -312,13 +324,27 @@ function DashboardBody({
   const effectiveHoveredNodeId = hoveredNodeId && visibleNodeIds.has(hoveredNodeId) ? hoveredNodeId : null;
 
   return (
-    <main className="dashboard-body">
-      <aside className="dashboard-column dashboard-column-left">
+    <main
+      className={`dashboard-body${leftCollapsed ? " left-collapsed" : ""}${rightCollapsed ? " right-collapsed" : ""}`}
+    >
+      <aside className={`dashboard-column dashboard-column-left${leftCollapsed ? " dashboard-column-collapsed" : ""}`}>
         <OverviewPanel collection={collection} />
         <QueryPerformancePanel collection={collection} />
       </aside>
 
       <div className="dashboard-graph">
+        <SidebarEdgeToggle
+          side="left"
+          collapsed={leftCollapsed}
+          onToggle={() => setLeftCollapsed((value) => !value)}
+          label={leftCollapsed ? "Show overview panel" : "Hide overview panel"}
+        />
+        <SidebarEdgeToggle
+          side="right"
+          collapsed={rightCollapsed}
+          onToggle={() => setRightCollapsed((value) => !value)}
+          label={rightCollapsed ? "Show records panel" : "Hide records panel"}
+        />
         <div className="graph-controls">
           <button onClick={onResetCamera}>Reset view</button>
         </div>
@@ -357,7 +383,9 @@ function DashboardBody({
         )}
       </div>
 
-      <aside className="dashboard-column dashboard-column-right">
+      <aside
+        className={`dashboard-column dashboard-column-right${rightCollapsed ? " dashboard-column-collapsed" : ""}`}
+      >
         <RecordsPanel collection={collection} />
         <RelatedEntitiesPanel collection={collection} />
         {subdomainCollection && <SubdomainsPanel collection={subdomainCollection} />}

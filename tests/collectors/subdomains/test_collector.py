@@ -247,6 +247,27 @@ class TestSourceFailureHandling:
 
         assert result.status == CollectionStatus.SUCCESS
 
+    def test_source_errors_default_error_type_is_source_error(self):
+        # Unchanged behavior for sources that don't set a custom
+        # error_type (e.g. crt.sh, dns_bruteforce) -- see exceptions.SourceError.
+        bad = FakeSource("bad", "m", error=SourceError("boom"))
+        collector = SubdomainCollector(sources=[bad])
+
+        result = collector.collect("example.com")
+
+        assert result.sources[0].error_type == "SOURCE_ERROR"
+        assert result.errors[0].error_type == "SOURCE_ERROR"
+
+    def test_source_error_custom_error_type_propagates_to_source_result_and_error(self):
+        bad = FakeSource("securitytrails", "m", error=SourceError("no api key", error_type="AUTH_ERROR"))
+        collector = SubdomainCollector(sources=[bad])
+
+        result = collector.collect("example.com")
+
+        assert result.sources[0].error_type == "AUTH_ERROR"
+        assert result.errors[0].error_type == "AUTH_ERROR"
+        assert result.errors[0].message == "no api key"
+
 
 class TestDnsValidationOptIn:
     def test_disabled_by_default(self):
