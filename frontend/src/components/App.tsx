@@ -18,6 +18,8 @@ import { TargetSearch } from "./TargetSearch";
 import { StatusView } from "./StatusView";
 import { InvestigationBanner } from "./InvestigationBanner";
 import { SidebarEdgeToggle } from "./SidebarEdgeToggle";
+import { CommandPalette, type Command } from "./CommandPalette";
+import { styleFor } from "../styles/entityStyle";
 import { OverviewPanel } from "../panels/OverviewPanel";
 import { RecordsPanel } from "../panels/RecordsPanel";
 import { RelatedEntitiesPanel } from "../panels/RelatedEntitiesPanel";
@@ -176,15 +178,16 @@ export function App() {
         <div className="dashboard-header-left">
           <h1>OSINT Investigation</h1>
           {state.collection && <span className="dashboard-target">{state.collection.target.value}</span>}
+          {state.collection && (
+            <span className={`status-badge status-badge-dot status-${state.collection.status}`}>
+              <span className="status-dot" aria-hidden="true" />
+              {state.collection.status.toUpperCase()}
+            </span>
+          )}
         </div>
 
         <div className="dashboard-header-right">
           <TargetSearch onInvestigate={handleInvestigate} disabled={isBusy} />
-          {state.collection && (
-            <span className={`status-badge status-${state.collection.status}`}>
-              {state.collection.status.toUpperCase()}
-            </span>
-          )}
         </div>
       </header>
 
@@ -294,16 +297,10 @@ function DashboardBody({
   // render, rather than each representation tracking its own copy.
   const [entityFilter, setEntityFilter] = useState<EntityFilterValue>("all");
 
-  // Sidebar visibility is a pure layout preference, same category as
-  // viewMode/entityFilter above -- local to the dashboard body, and
-  // deliberately does not reset on a new search. Both start open (the
-  // dashboard's existing default), so a collapse is always something the
-  // investigator does deliberately, not a surprise on first load. Panel
-  // content itself is never unmounted on collapse (see the JSX below) --
-  // only hidden via CSS -- so each CollapsiblePanel's own expand/collapse
-  // state and scroll position survive a sidebar collapse/reopen.
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
+  // Sidebar collapse state itself now lives in App (see its own comment
+  // there) -- panel content is still never unmounted on collapse, only
+  // hidden via CSS, so each CollapsiblePanel's own expand/collapse state
+  // and scroll position survive a sidebar collapse/reopen exactly as before.
 
   const entityCounts = useMemo(() => countNodesByKind(graph), [graph]);
 
@@ -322,6 +319,95 @@ function DashboardBody({
   // if the investigator switches back to a filter that includes it again.
   const effectiveSelectedNodeId = selectedNodeId && visibleNodeIds.has(selectedNodeId) ? selectedNodeId : null;
   const effectiveHoveredNodeId = hoveredNodeId && visibleNodeIds.has(hoveredNodeId) ? hoveredNodeId : null;
+
+  // Selecting an entity from a sidebar row (see graphLookup.ts) always
+  // resets the entity-type filter to "all" -- otherwise selecting e.g. a
+  // subdomain while the graph is filtered to "IP" would select a node the
+  // current filter hides, and the click would appear to do nothing.
+  const handleSelectEntity = useCallback(
+    (nodeId: string) => {
+      setEntityFilter("all");
+      onSelectNode(nodeId);
+    },
+    [onSelectNode]
+  );
+
+  // Sidebar visibility is a pure layout preference -- deliberately does not
+  // reset on a new search. Both start open (the dashboard's existing
+  // default), so a collapse is always something the investigator does
+  // deliberately, not a surprise on first load.
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen((open) => !open);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Selecting a node -- from anywhere: a sidebar row, the 2D board, or a 3D
+  // sphere -- reveals the matching sidebar row if it's hiding inside a
+  // collapsed accordion section (each panel forces its own CollapsiblePanel
+  // open via `expandSignal` when one of its rows matches, see
+  // RecordsPanel/RelatedEntitiesPanel/SubdomainsPanel/CertificatesPanel),
+  // then scrolls that specific row into view once the reveal has had a
+  // moment to start (matches .panel-body-wrapper's 220ms transition). This
+  // is what makes selecting a node in the GRAPH actually surface its
+  // sidebar counterpart, not just tag it with a CSS class nobody can see.
+  useEffect(() => {
+    if (!effectiveSelectedNodeId) return;
+    const timer = setTimeout(() => {
+      document
+        .querySelector(`[data-node-id="${effectiveSelectedNodeId}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 260);
+    return () => clearTimeout(timer);
+  }, [effectiveSelectedNodeId]);
+
+  const rootId = graph.nodes[0]?.id ?? null;
+  const availableKinds = useMemo(() => Object.keys(entityCounts) as (keyof typeof entityCounts)[], [entityCounts]);
+
+  // Every command here is an aggregation of an action that already exists
+  // elsewhere in this component (or its props) -- see CommandPalette.tsx.
+  const commands: Command[] = useMemo(() => {
+    const list: Command[] = [
+      { id: "reset-view", group: "Graph", label: "Reset view", run: onResetCamera },
+      { id: "view-2d", group: "Graph", label: "Switch to 2D view", run: () => handleViewModeChange("2d") },
+      { id: "view-3d", group: "Graph", label: "Switch to 3D view", run: () => handleViewModeChange("3d") },
+      {
+        id: "toggle-left",
+        group: "Layout",
+        label: leftCollapsed ? "Show overview panel" : "Hide overview panel",
+        run: () => setLeftCollapsed((value) => !value),
+      },
+      {
+        id: "toggle-right",
+        group: "Layout",
+        label: rightCollapsed ? "Show records panel" : "Hide records panel",
+        run: () => setRightCollapsed((value) => !value),
+      },
+      { id: "filter-all", group: "Filter", label: "Show all entities", run: () => setEntityFilter("all") },
+      ...availableKinds.map((kind) => ({
+        id: `filter-${kind}`,
+        group: "Filter",
+        label: `Show only ${styleFor(kind).label}`,
+        run: () => setEntityFilter(kind),
+      })),
+    ];
+
+    if (rootId) {
+      list.splice(3, 0, { id: "focus-target", group: "Graph", label: "Focus investigation target", run: () => onSelectNode(rootId) });
+    }
+
+    return list;
+  }, [onResetCamera, handleViewModeChange, leftCollapsed, rightCollapsed, availableKinds, rootId, onSelectNode]);
 
   return (
     <main
@@ -379,17 +465,48 @@ function DashboardBody({
           />
         )}
         {effectiveSelectedNodeId && (
-          <NodeInspector graph={graph} selectedNodeId={effectiveSelectedNodeId} onClose={() => onSelectNode(null)} />
+          <NodeInspector
+            key={effectiveSelectedNodeId}
+            graph={graph}
+            selectedNodeId={effectiveSelectedNodeId}
+            onClose={() => onSelectNode(null)}
+            onSelectNode={onSelectNode}
+          />
         )}
+        <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} commands={commands} />
       </div>
 
       <aside
         className={`dashboard-column dashboard-column-right${rightCollapsed ? " dashboard-column-collapsed" : ""}`}
       >
-        <RecordsPanel collection={collection} />
-        <RelatedEntitiesPanel collection={collection} />
-        {subdomainCollection && <SubdomainsPanel collection={subdomainCollection} />}
-        {certificateCollection && <CertificatesPanel collection={certificateCollection} />}
+        <RecordsPanel
+          collection={collection}
+          graph={graph}
+          selectedNodeId={effectiveSelectedNodeId}
+          onSelectEntity={handleSelectEntity}
+        />
+        <RelatedEntitiesPanel
+          collection={collection}
+          graph={graph}
+          selectedNodeId={effectiveSelectedNodeId}
+          onSelectEntity={handleSelectEntity}
+        />
+        {subdomainCollection && (
+          <SubdomainsPanel
+            collection={subdomainCollection}
+            graph={graph}
+            selectedNodeId={effectiveSelectedNodeId}
+            onSelectEntity={handleSelectEntity}
+          />
+        )}
+        {certificateCollection && (
+          <CertificatesPanel
+            collection={certificateCollection}
+            graph={graph}
+            selectedNodeId={effectiveSelectedNodeId}
+            onSelectEntity={handleSelectEntity}
+          />
+        )}
         <ErrorsPanel collection={collection} />
         <Legend />
       </aside>

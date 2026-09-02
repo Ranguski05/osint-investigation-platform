@@ -137,7 +137,15 @@ export function InvestigationGraph({
         backgroundColor="rgba(0,0,0,0)"
         showNavInfo={false}
         nodeRelSize={NODE_REL_SIZE}
-        nodeVal={(node) => (node.id === selectedNodeId ? styleFor(node.kind).size * 1.5 : styleFor(node.kind).size)}
+        nodeVal={(node) => {
+          if (node.id === selectedNodeId) return styleFor(node.kind).size * 1.5;
+          // Hover gets a smaller bump than selection -- "the investigator is
+          // touching this," not "this is chosen." Skipped when a selection
+          // is already active so hovering some other node while one is
+          // selected doesn't visually compete with it.
+          if (node.id === hoveredNodeId && selectedNodeId === null) return styleFor(node.kind).size * 1.15;
+          return styleFor(node.kind).size;
+        }}
         nodeColor={(node) => nodeColor(node, focusId, connectedNodeIds)}
         nodeOpacity={0.95}
         nodeLabel={(node) => nodeTooltip(node)}
@@ -159,7 +167,9 @@ export function InvestigationGraph({
           const n = node as unknown as FgNode;
           const material = (obj as THREE.Sprite).material as THREE.SpriteMaterial;
           const depth = depths.get(n.id) ?? -1;
-          const spec = glowSpecFor(n, depth, n.id === selectedNodeId);
+          const isSelected = n.id === selectedNodeId;
+          const isHovered = n.id === hoveredNodeId && selectedNodeId === null;
+          const spec = glowSpecFor(n, depth, isSelected, isHovered);
 
           if (!spec) {
             material.opacity = 0;
@@ -253,15 +263,32 @@ interface GlowSpec {
  * Decides which nodes emit a glow and how strong it is, purely from
  * existing graph properties -- entity kind and hop-depth from the target
  * (already computed above via computeNodeDepths) -- plus current
- * selection. Nothing here is specific to any domain/target value.
+ * selection/hover. Nothing here is specific to any domain/target value.
  */
-function glowSpecFor(node: FgNode, depth: number, isSelected: boolean): GlowSpec | null {
+function glowSpecFor(node: FgNode, depth: number, isSelected: boolean, isHovered: boolean): GlowSpec | null {
   if (isSelected) {
     // Strongest glow regardless of entity type. The target keeps its
     // signature cyan/blue even when selected; everything else glows in
     // its own established color.
     return { color: depth === 0 ? ENTITY_STYLES.domain.color : styleFor(node.kind).color, opacity: 0.95, scale: 5.5 };
   }
+
+  const base = baseGlowSpecFor(node, depth);
+
+  if (isHovered) {
+    // Hover always gets at least a subtle glow -- "the investigator is
+    // touching this" -- even for kinds/depths with no glow tier of their
+    // own, but capped well below the selection tier above so it never
+    // competes with a real selection elsewhere on the graph.
+    return base
+      ? { ...base, opacity: Math.min(0.75, base.opacity + 0.15), scale: base.scale + 0.6 }
+      : { color: styleFor(node.kind).color, opacity: 0.45, scale: 2.6 };
+  }
+
+  return base;
+}
+
+function baseGlowSpecFor(node: FgNode, depth: number): GlowSpec | null {
   if (depth === 0) {
     // The investigation target itself, regardless of its literal entity
     // kind (a hostname or IP target should still read as "the target").

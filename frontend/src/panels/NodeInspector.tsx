@@ -5,10 +5,12 @@ interface NodeInspectorProps {
   graph: InvestigationGraph;
   selectedNodeId: string;
   onClose: () => void;
+  /** Clicking a connection jumps the selection to that entity -- lets the investigator traverse the graph from within the inspector itself, not just by hunting for the next node on the canvas. */
+  onSelectNode: (id: string) => void;
 }
 
 /** Shown when a node is selected in the 3D graph -- surfaces its edges without leaving the graph view. */
-export function NodeInspector({ graph, selectedNodeId, onClose }: NodeInspectorProps) {
+export function NodeInspector({ graph, selectedNodeId, onClose, onSelectNode }: NodeInspectorProps) {
   const node = graph.nodes.find((candidate) => candidate.id === selectedNodeId);
   if (!node) return null;
 
@@ -34,18 +36,44 @@ export function NodeInspector({ graph, selectedNodeId, onClose }: NodeInspectorP
         </div>
       </div>
 
+      {node.sources.length > 0 && (
+        <div className="node-inspector-source">Source: {node.sources.join(", ")}</div>
+      )}
+
       {connections.length > 0 && (
-        <ul className="record-list">
-          {connections.map(({ edge, outgoing, otherNode }) => (
-            <li className="record-item" key={edge.id}>
-              <span className="record-attrs">
-                <span>{edge.relationship}</span>
-                <span>{outgoing ? "→" : "←"}</span>
-                <span>{otherNode?.label ?? "?"}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="node-inspector-relationships-title">Relationships ({connections.length})</div>
+          <ul className="record-list">
+            {connections.map(({ edge, outgoing, otherNode }) => (
+              <li
+                className={`record-item${otherNode ? " record-item-interactive" : ""}`}
+                key={edge.id}
+                role={otherNode ? "button" : undefined}
+                tabIndex={otherNode ? 0 : undefined}
+                onClick={otherNode ? () => onSelectNode(otherNode.id) : undefined}
+                onKeyDown={
+                  otherNode
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onSelectNode(otherNode.id);
+                        }
+                      }
+                    : undefined
+                }
+              >
+                {otherNode && (
+                  <span className="record-item-swatch" style={{ backgroundColor: styleFor(otherNode.kind).color }} aria-hidden="true" />
+                )}
+                <span className="record-attrs">
+                  <span>{edge.relationship}</span>
+                  <span>{outgoing ? "→" : "←"}</span>
+                  <span>{otherNode?.label ?? "?"}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

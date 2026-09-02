@@ -16,10 +16,10 @@ export const ENTITY_STYLES: Record<EntityKind, EntityStyle> = {
   hostname: { color: "#7fd1ae", label: "Hostname", size: 5 },
   ip: { color: "#f2a65a", label: "IP Address", size: 5 },
   nameserver: { color: "#c792ea", label: "Nameserver", size: 5 },
-  mail_server: { color: "#f6c177", label: "Mail Server", size: 5 },
+  mail_server: { color: "#3fdb3a", label: "Mail Server", size: 5 },
   organization: { color: "#ef6a6a", label: "Organization", size: 6 },
   certificate: { color: "#6ae0d9", label: "Certificate", size: 6 },
-  other: { color: "#8a92a6", label: "Other", size: 3.5 },
+  other: { color: "#8a92a6", label: "Other", size: 3 },
 };
 
 export function styleFor(kind: EntityKind): EntityStyle {
